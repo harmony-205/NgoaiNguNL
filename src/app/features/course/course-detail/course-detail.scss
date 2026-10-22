@@ -1,0 +1,518 @@
+:host {
+  display: block;
+  background-color: #ffffff;
+  min-height: 100vh;
+}
+
+.course-learning-container {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 40px 20px;
+
+  /* Theme variables are inherited from styles.scss */
+}
+
+/* Tabs */
+.hsk-tabs {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 50px;
+  border-bottom: 2px solid #e5e5e5;
+  padding-bottom: 16px;
+  justify-content: center;
+
+  .hsk-tab {
+    padding: 12px 32px;
+    background: #ffffff;
+    border-radius: 20px;
+    font-size: 16px;
+    font-weight: 800;
+    color: #888;
+    cursor: pointer;
+    border: 2px solid #e5e5e5;
+    box-shadow: 3px 3px 0px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+
+    &.hsk1:hover {
+      background: #f0fdfa;
+      color: #14b8a6;
+      border-color: #14b8a6;
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0px rgba(20, 184, 166, 0.2);
+    }
+
+    &.hsk1.active {
+      background: #ccfbf1;
+      color: #0f766e;
+      border-color: #5eead4;
+      transform: translate(0, 0);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    &.hsk2:hover {
+      background: #f4f8fc;
+      color: #5c84ab;
+      border-color: #5c84ab;
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0px rgba(92, 132, 171, 0.2);
+    }
+
+    &.hsk2.active {
+      background: #e0eaf5;
+      color: #334e68;
+      border-color: #a4c2df;
+      transform: translate(0, 0);
+      box-shadow: 0 0 0 transparent;
+    }
+
+    &.hsk3:hover {
+      background: #fdf2f8;
+      color: #db2777;
+      border-color: #db2777;
+      transform: translate(-2px, -2px);
+      box-shadow: 5px 5px 0px rgba(219, 39, 119, 0.2);
+    }
+
+    &.hsk3.active {
+      background: #fce7f3;
+      color: #9d174d;
+      border-color: #fbcfe8;
+      transform: translate(0, 0);
+      box-shadow: 0 0 0 transparent;
+    }
+  }
+}
+
+/* Units Path (Calendar Grid Layout) */
+.calendar-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 30px;
+  width: 100%;
+  max-width: 900px;
+  margin: 0 auto 60px auto;
+  justify-items: center;
+}
+
+.unit-wrapper {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  z-index: 1;
+
+  &.is-active {
+    z-index: 100;
+  }
+}
+
+.unit-button {
+  width: 90px;
+  height: 90px;
+  position: relative;
+  cursor: pointer;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Inner Icon Bubble - Flat Design */
+  .unit-icon {
+    width: 66px;
+    height: 66px;
+    background: var(--theme-color);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--theme-text);
+    font-size: 28px;
+    font-weight: 900;
+    z-index: 2;
+    transition: all 0.2s;
+  }
+
+  /* Unstarted (Gray) State */
+  &.unstarted {
+    .unit-icon {
+      background: #f5f5f5;
+      color: #a3a3a3;
+    }
+  }
+
+  /* Progress Ring */
+  .progress-ring {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    transform: rotate(-90deg);
+    z-index: 1;
+
+    .ring-bg {
+      fill: none;
+      stroke: #f5f5f5;
+      stroke-width: 8;
+    }
+
+    .ring-fill {
+      fill: none;
+      stroke: var(--theme-stroke);
+      stroke-width: 8;
+      stroke-linecap: round;
+      transition: stroke-dashoffset 0.5s ease-out;
+    }
+  }
+
+  /* Hover & Active states */
+  &:hover {
+    transform: scale(1.05);
+  }
+
+  &:active {
+    transform: scale(0.95);
+  }
+
+  &.active {
+    transform: scale(1.1);
+  }
+}
+
+/* Tooltip */
+.unit-tooltip {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 16px;
+  background: #ffffff;
+  border: 2px solid #e5e5e5;
+  border-radius: 20px;
+  box-shadow: 6px 6px 0px rgba(0, 0, 0, 0.08);
+  padding: 16px;
+  width: 200px;
+  text-align: center;
+  z-index: 10;
+  animation: tooltipPop 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  .tooltip-arrow {
+    position: absolute;
+    top: -10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0;
+    height: 0;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #e5e5e5;
+
+    &::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: -8px;
+      border-left: 8px solid transparent;
+      border-right: 8px solid transparent;
+      border-bottom: 8px solid #fff;
+    }
+  }
+
+  .tooltip-content {
+    h3 {
+      margin: 0 0 8px 0;
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--theme-text);
+    }
+
+    p {
+      margin: 0 0 16px 0;
+      font-size: 14px;
+      font-weight: 700;
+      color: #888;
+    }
+
+    .btn-action {
+      width: 100%;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--theme-text);
+      background: var(--theme-color);
+      border: none;
+      cursor: pointer;
+      box-shadow: none;
+      transition: all 0.2s;
+
+      &:hover {
+        filter: brightness(0.95);
+        box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.15);
+        transform: translate(-2px, -2px);
+      }
+
+      &:active {
+        box-shadow: none;
+        transform: translate(0, 0);
+      }
+    }
+  }
+}
+
+@keyframes tooltipPop {
+  0% {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px) scale(0.9);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0) scale(1);
+  }
+}
+
+/* Center Presentation Header Banner (Image 15) */
+.center-intro-banner {
+  background: #FFF9E6;
+  border: 2px solid #F5E6B3;
+  border-radius: 20px;
+  padding: 28px 32px;
+  margin-bottom: 36px;
+  box-shadow: 4px 4px 0px rgba(237, 186, 32, 0.12);
+
+  .banner-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap;
+
+    .brand-left {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+
+      .center-logo {
+        width: 80px;
+        height: 80px;
+        border-radius: 50%;
+        border: 2px solid #EDBA20;
+        object-fit: cover;
+      }
+
+      .brand-titles {
+        .center-title {
+          margin: 0 0 4px;
+          font-size: 22px;
+          font-weight: 800;
+          color: #2D3748;
+        }
+
+        .center-slogan-1 {
+          margin: 0;
+          font-size: 13px;
+          font-weight: 700;
+          color: #718096;
+        }
+
+        .center-slogan-2 {
+          margin: 2px 0 10px;
+          font-size: 13px;
+          font-weight: 700;
+          color: #B7791F;
+          font-style: italic;
+        }
+
+        .banner-badges {
+          display: flex;
+          gap: 8px;
+          flex-wrap: wrap;
+
+          .badge {
+            font-size: 12px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: #ffffff;
+            border: 1px solid #E2E8F0;
+            color: #4A5568;
+
+            &.streak-badge {
+              border-color: #FBD38D;
+              color: #DD6B20;
+            }
+
+            &.month-badge {
+              border-color: #BEE3F8;
+              color: #2B6CB0;
+            }
+
+            &.date-badge {
+              color: #718096;
+            }
+          }
+        }
+      }
+    }
+
+    .teacher-avatar-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+
+      .avatar-ring {
+        width: 88px;
+        height: 88px;
+        border-radius: 50%;
+        border: 3px solid #EDBA20;
+        padding: 2px;
+        background: #fff;
+        overflow: hidden;
+
+        img {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          object-fit: cover;
+        }
+      }
+
+      .teacher-name {
+        font-size: 14px;
+        font-weight: 800;
+        color: #2D3748;
+      }
+    }
+  }
+
+  .banner-divider {
+    height: 1px;
+    background: #EEDFA8;
+    margin: 20px 0;
+  }
+
+  .banner-content {
+    .banner-headline {
+      margin: 0 0 8px;
+      font-size: 15px;
+      font-weight: 800;
+      color: #744210;
+      letter-spacing: 0.5px;
+    }
+
+    .banner-desc {
+      margin: 0 0 16px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: #4A5568;
+    }
+
+    .sub-headline {
+      margin: 14px 0 8px;
+      font-size: 14px;
+      font-weight: 800;
+      color: #975A16;
+    }
+
+    .course-bullets-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 8px;
+      margin-bottom: 14px;
+
+      .bullet-item {
+        font-size: 13.5px;
+        line-height: 1.5;
+        color: #4A5568;
+      }
+    }
+  }
+}
+
+.hsk-tab {
+  &.is-locked {
+    opacity: 0.75;
+    background: #F7FAFC;
+    border-style: dashed;
+
+    &:hover {
+      opacity: 1;
+      border-color: #CBD5E0;
+    }
+
+    .lock-indicator {
+      margin-left: 6px;
+      font-size: 13px;
+    }
+  }
+}
+
+/* Locked Modal */
+.locked-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+
+  .locked-modal-card {
+    background: #ffffff;
+    border-radius: 20px;
+    max-width: 440px;
+    width: 100%;
+    padding: 32px 28px;
+    text-align: center;
+    border: 2px solid #E2E8F0;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    animation: fadeIn 0.25s ease-out;
+
+    .modal-icon {
+      font-size: 44px;
+      margin-bottom: 12px;
+    }
+
+    h3 {
+      margin: 0 0 12px;
+      font-size: 20px;
+      font-weight: 800;
+      color: #2D3748;
+    }
+
+    .modal-msg {
+      font-size: 14px;
+      line-height: 1.6;
+      color: #4A5568;
+      margin: 0 0 8px;
+    }
+
+    .modal-sub {
+      font-size: 12.5px;
+      color: #718096;
+      font-style: italic;
+      margin: 0 0 20px;
+    }
+
+    .btn-modal-close {
+      padding: 10px 28px;
+      border-radius: 12px;
+      border: none;
+      background: #EDBA20;
+      color: #fff;
+      font-weight: 800;
+      font-size: 14px;
+      cursor: pointer;
+      box-shadow: 2px 2px 0px rgba(0, 0, 0, 0.1);
+
+      &:hover {
+        background: #D4A315;
+      }
+    }
+  }
+}

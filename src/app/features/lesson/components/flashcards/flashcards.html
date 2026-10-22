@@ -1,0 +1,62 @@
+<div class="flashcards-container">
+  <div class="header">
+    <div class="title-badge">🃏 {{ data.title }}</div>
+    <p class="description">Đoán nghĩa trước, rồi bấm lật thẻ kiểm tra.</p>
+  </div>
+
+  <div class="completion-message" *ngIf="isCompleted">
+    🎉 Tuyệt vời! Bạn đã ghi nhớ tất cả các thẻ trong bài này.
+  </div>
+
+  <div class="progress-section">
+    <div class="indicators">
+      <div class="indicator-dot" 
+           *ngFor="let word of data.words; let i = index"
+           [class.active]="i === currentIndex"
+           [class.memorized]="cardStatus[word.id] === 'memorized'"
+           [class.review]="cardStatus[word.id] === 'review'">
+      </div>
+    </div>
+  </div>
+
+  <div class="navigation">
+    <button class="nav-btn" (click)="prev()" [disabled]="currentIndex === 0">←</button>
+    <div class="counter">{{ currentIndex + 1 }} / {{ data.words.length }}</div>
+    <button class="nav-btn" (click)="next()" [disabled]="currentIndex === data.words.length - 1">→</button>
+  </div>
+
+  <div class="flashcard-scene" (click)="flip()">
+    <div class="flashcard-inner" [class.is-flipped]="isFlipped">
+      
+      <!-- Front Face -->
+      <div class="flashcard-face flashcard-front">
+        <div class="hanzi-large">{{ currentWord.hanzi }}</div>
+        <button class="btn-audio" (click)="playWordAudio($event)">🔊 Đọc mẫu</button>
+        <div class="hint">Bấm thẻ để lật</div>
+      </div>
+
+      <!-- Back Face (Image 23) -->
+      <div class="flashcard-face flashcard-back">
+        <div class="meaning">{{ currentWord.meaning }}</div>
+        <div class="pinyin">{{ currentWord.pinyin }}</div>
+        
+        <div class="examples" *ngIf="currentWord.examples && currentWord.examples.length > 0">
+          <div class="ex-hanzi">{{ currentWord.examples[0].hanzi }}</div>
+          <div class="ex-meaning">{{ currentWord.examples[0].meaning }}</div>
+        </div>
+
+        <div class="action-buttons">
+          <button class="btn-audio-green" (click)="playWordAudio($event)">🔊 Đọc từ</button>
+          <button class="btn-audio-white" (click)="playSentenceAudio($event)">🔊 Đọc câu</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="actions">
+    <button class="btn-shuffle" (click)="shuffle()">🔀 Xáo trộn</button>
+    <button class="btn-review" (click)="markReview()">🔄 Cần học thêm</button>
+    <button class="btn-memorized" (click)="markMemorized()">✔️ Đã ghi nhớ</button>
+  </div>
+</div>

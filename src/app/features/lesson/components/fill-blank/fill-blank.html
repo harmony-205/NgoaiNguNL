@@ -1,0 +1,87 @@
+<div class="fill-blank-container">
+  <div class="header">
+    <div class="title-badge">✏️ {{ data.title }}</div>
+    <p class="description">Điền từ/cụm từ thích hợp để hoàn thành câu. Mỗi ô điền đều hiển thị đầy đủ Chữ Hán và Phiên âm (Pinyin).</p>
+  </div>
+
+  <div class="question-box" *ngFor="let q of displayQuestions; let i = index">
+    <div class="q-header" *ngIf="!isFinalTest">
+      <div class="number-badge">{{ i + 1 }}</div>
+    </div>
+
+    <div class="q-body">
+      <!-- Câu hỏi -->
+      <div class="sentence">
+        <span *ngFor="let part of q.parts">
+          <span *ngIf="part.type === 'text'" class="sentence-text">{{ part.content }}</span>
+          <span *ngIf="part.type === 'blank'" class="blank-slot"
+            [class.filled]="!!selectedChoices[q.id] || !!typedAnswers[q.id]"
+            [class.correct]="submitted[q.id] && isCorrect(q)" [class.incorrect]="submitted[q.id] && !isCorrect(q)">
+            <ng-container *ngIf="!selectedChoices[q.id] && !typedAnswers[q.id]">
+              <input type="text" class="typing-input" [(ngModel)]="typedAnswers[q.id]" placeholder="Nhập từ..."
+                [disabled]="submitted[q.id]" />
+            </ng-container>
+            <ng-container *ngIf="selectedChoices[q.id] || typedAnswers[q.id]">
+              <div class="filled-content" (click)="clearSelection(q)"
+                [style.cursor]="!submitted[q.id] ? 'pointer' : 'default'">
+                <span class="pinyin" *ngIf="getFilledPinyin(q)">{{ getFilledPinyin(q) }}</span>
+                <span class="hanzi">{{ getFilledText(q) }}</span>
+              </div>
+            </ng-container>
+          </span>
+        </span>
+      </div>
+
+      <div class="hint" *ngIf="q.hint">
+        <span class="hint-icon">💡</span> {{ q.hint }}
+      </div>
+
+      <!-- Từ gợi ý (Source zone) -->
+      <div class="source-zone" *ngIf="getAvailableChoices(q).length > 0 && !isFinalTest">
+        <div class="word-chip" *ngFor="let choice of getAvailableChoices(q)" (click)="selectChoice(q, choice.id)">
+          <div class="pinyin">{{ choice.pinyin }}</div>
+          <div class="hanzi">{{ choice.text }}</div>
+        </div>
+      </div>
+
+      <!-- Kết quả -->
+      <div class="feedback-area" *ngIf="submitted[q.id]">
+        <div class="correct-answers-box" *ngIf="!isCorrect(q)">
+          <h5>🔑 Đáp án đúng 正确答案:</h5>
+          <div class="answers-pills">
+            <span class="answer-pill">
+              {{ getExpectedChoice(q)?.text }} <small *ngIf="getExpectedChoice(q)?.pinyin">({{ getExpectedChoice(q)?.pinyin }})</small>
+            </span>
+          </div>
+        </div>
+
+        <div class="feedback-message" [class.success]="isCorrect(q)" [class.warning]="!isCorrect(q)">
+          <span class="icon" *ngIf="isCorrect(q)">🎉</span>
+          <span class="icon" *ngIf="!isCorrect(q)">💪</span>
+          {{ isCorrect(q) ? 'Tuyệt vời! Bạn đã điền chính xác.' : 'Chưa chính xác. Cố lên nhé!' }}
+        </div>
+      </div>
+
+      <!-- Hành động từng câu -->
+      <div class="actions" *ngIf="!isFinalTest">
+        <button class="btn-primary" (click)="checkAnswer(q)" *ngIf="!submitted[q.id]"
+          [disabled]="!selectedChoices[q.id] && !typedAnswers[q.id]">Kiểm tra</button>
+        <button class="btn-secondary" (click)="resetAnswer(q)" *ngIf="submitted[q.id]">Làm lại</button>
+        <button class="btn-audio" (click)="speakSentence(q)">🔊 Đọc mẫu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Global Action Bar matching Image 16 -->
+  <div class="global-actions-bar" *ngIf="!isFinalTest">
+    <button class="btn-action check" (click)="checkAllAnswers()">
+      <span class="icon">✓</span> Kiểm tra
+    </button>
+    <button class="btn-action reveal" (click)="toggleShowAnswers()">
+      <span class="icon">👁️</span> {{ answersRevealed ? 'Ẩn đáp án' : 'Xem đáp án' }}
+    </button>
+    <button class="btn-action reset" (click)="resetAll()">
+      <span class="icon">🔄</span> Làm lại
+    </button>
+  </div>
+</div>

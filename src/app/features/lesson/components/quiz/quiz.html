@@ -1,1 +1,64 @@
-<p>quiz works!</p>
+<div class="quiz-container">
+  <div class="header">
+    <div class="title-row">
+      <span class="icon">📝</span>
+      <span class="title-text">{{ data.title }}</span>
+    </div>
+    <p class="description">{{ data.description || 'Chọn đáp án đúng nhất cho các câu hỏi sau.' }}</p>
+  </div>
+
+  <!-- Tracker bar (sticky) -->
+  <div class="tracker-bar" *ngIf="!isFinalTest">
+    <div class="tracker-item" *ngFor="let q of displayQuestions; let i = index" [ngClass]="getTrackerClass(q)"
+      (click)="scrollToQuestion(i)">
+      {{ i + 1 }}
+    </div>
+  </div>
+
+  <!-- Questions List -->
+  <div class="questions-list">
+    <div class="question-card" *ngFor="let q of displayQuestions; let i = index" [id]="'question-' + i">
+      <div class="q-header">
+        <span class="q-number" *ngIf="!isFinalTest">Câu {{ i + 1 }}</span>
+        <span class="q-text">{{ q.questionText }}</span>
+      </div>
+
+      <div class="options-grid" [ngClass]="'grid-' + q.options.length">
+        <div class="option-item" *ngFor="let opt of q.options; let optIdx = index"
+          [class.selected]="answers[q.id] === opt.id" [class.correct]="submitted && opt.id === q.correctOptionId"
+          [class.incorrect]="submitted && answers[q.id] === opt.id && answers[q.id] !== q.correctOptionId"
+          (click)="selectOption(q.id, opt.id)">
+          <div class="opt-letter">{{ ['A', 'B', 'C', 'D', 'E', 'F'][optIdx] }}</div>
+          <div class="opt-text">
+            <span class="pinyin" *ngIf="opt.pinyin">{{ opt.pinyin }}</span>
+            <span class="hanzi">{{ opt.text }}</span>
+          </div>
+
+          <!-- Icon check mark if correct after submit -->
+          <span class="result-icon correct" *ngIf="submitted && opt.id === q.correctOptionId">✔️</span>
+          <span class="result-icon incorrect"
+            *ngIf="submitted && answers[q.id] === opt.id && answers[q.id] !== q.correctOptionId">❌</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+  <!-- Feedback Area -->
+  <div class="feedback-area" *ngIf="submitted">
+    <div class="feedback-message" [class.success]="isPerfect" [class.warning]="!isPerfect">
+      <span class="icon" *ngIf="isPerfect">🎉</span>
+      <span class="icon" *ngIf="!isPerfect">💪</span>
+      {{ isPerfect ? 'Tuyệt vời! Bạn đã trả lời chính xác.' : 'Chưa chính xác hoàn toàn. Cố lên nhé!' }}
+    </div>
+  </div>
+  <div class="actions">
+    <button class="btn-primary" (click)="checkAnswers()" *ngIf="!submitted" [disabled]="!canSubmit">
+      <span class="icon">✔️</span> Kiểm tra
+    </button>
+    <button class="btn-secondary" (click)="reset()" *ngIf="submitted && !isFinalTest">
+      <span class="icon">🔄</span> Làm lại
+    </button>
+  </div>
+</div>

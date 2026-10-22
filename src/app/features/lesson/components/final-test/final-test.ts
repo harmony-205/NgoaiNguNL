@@ -1,0 +1,100 @@
+import { Component, EventEmitter, Input, Output, ChangeDetectorRef } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FinalTestData, FinalTestItem } from '../../models/lesson.data';
+import { QuizComponent } from '../quiz/quiz';
+import { ArrangingComponent } from '../arranging/arranging';
+import { FillBlankComponent } from '../fill-blank/fill-blank';
+import { MatchingComponent } from '../matching/matching';
+import { WarmUpComponent } from '../warm-up/warm-up';
+
+import { Router } from '@angular/router';
+
+@Component({
+  selector: 'app-final-test',
+  standalone: true,
+  imports: [
+    CommonModule,
+    QuizComponent,
+    ArrangingComponent,
+    FillBlankComponent,
+    MatchingComponent,
+    WarmUpComponent
+  ],
+  templateUrl: './final-test.html',
+  styleUrl: './final-test.scss'
+})
+export class FinalTestComponent {
+  constructor(private cdr: ChangeDetectorRef, private router: Router) {}
+
+  @Input() data?: FinalTestData;
+  @Output() progressUpdated = new EventEmitter<number>();
+
+  questionQueue: FinalTestItem[] = [];
+  originalTotalQuestions: number = 0;
+  testCompleted: boolean = false;
+  score: number = 0;
+  isCurrentQuestionChecked: boolean = false;
+  wasCurrentQuestionCorrect: boolean = false;
+  showQuestion: boolean = true;
+
+  ngOnChanges() {
+    if (this.data && this.data.questions) {
+      this.questionQueue = [...this.data.questions];
+      this.originalTotalQuestions = this.data.questions.length;
+      this.testCompleted = false;
+      this.score = 0;
+      this.isCurrentQuestionChecked = false;
+      this.showQuestion = true;
+    }
+  }
+
+  get currentQuestion(): FinalTestItem | undefined {
+    if (this.questionQueue.length === 0) return undefined;
+    return this.questionQueue[0];
+  }
+
+  // Cần bắt sự kiện hoàn thành của từng dạng bài để hiện nút Tiếp tục
+  onQuestionCompleted(isCorrect: boolean) {
+    this.isCurrentQuestionChecked = true;
+    this.wasCurrentQuestionCorrect = isCorrect;
+  }
+
+  nextQuestion() {
+    this.isCurrentQuestionChecked = false;
+    this.showQuestion = false; // Ẩn component hiện tại để force re-render
+
+    // Lấy câu hỏi hiện tại ra khỏi đầu hàng chờ
+    const currentQ = this.questionQueue.shift();
+
+    if (currentQ) {
+      if (this.wasCurrentQuestionCorrect) {
+        this.score++;
+      } else {
+        this.questionQueue.push(currentQ);
+      }
+    }
+
+    if (this.questionQueue.length > 0) {
+      setTimeout(() => {
+        this.showQuestion = true; // Hiện lại component mới (hoặc component cũ đã được reset)
+        this.cdr.detectChanges(); // Bắt buộc render lại
+        
+        const container = document.querySelector('.final-test-container');
+        if (container) {
+          container.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 50);
+    } else {
+      this.testCompleted = true;
+      this.progressUpdated.emit(100);
+    }
+  }
+
+  resetTest() {
+    this.ngOnChanges();
+  }
+
+  finishTest() {
+    this.router.navigate(['/course', 'tieng-trung']);
+  }
+}

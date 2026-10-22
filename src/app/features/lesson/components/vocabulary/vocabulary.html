@@ -1,1 +1,113 @@
-<p>vocabulary works!</p>
+<div class="vocabulary-container">
+  <div class="header">
+    <div class="title-row">
+      <span class="icon">📚</span>
+      <span class="title-text">{{ data.title }}</span>
+      <span class="badge-new">{{ data.words.length }} Từ</span>
+    </div>
+    <p class="description" *ngIf="data.description">👆 Bấm thẻ để xem nghĩa & câu ví dụ.</p>
+  </div>
+
+  <div class="vocab-grid">
+    <div class="vocab-card" *ngFor="let word of data.words; let i = index" (click)="openDetail(word)">
+      <div class="card-number">{{ i + 1 }}</div>
+      <div class="type-badge" *ngIf="word.wordType">{{ word.wordType }}</div>
+
+      <div class="main-content">
+        <div class="hanzi">{{ word.hanzi }}</div>
+        <button class="btn-play" (click)="playAudio($event, word)">
+          <span class="icon">🔊</span> Đọc mẫu
+        </button>
+      </div>
+
+      <div class="footer-content">
+        <div class="pinyin">{{ word.pinyin }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Detail Modal (Image 11) -->
+  <div class="modal-overlay" *ngIf="selectedWord" (click)="closeDetail()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+      <button class="btn-close" (click)="closeDetail()">✕ Đóng</button>
+
+      <div class="modal-body">
+        <div class="word-header">
+          <div class="number-badge">{{ data.words.indexOf(selectedWord) + 1 }}</div>
+          <div class="type-badge-large" *ngIf="selectedWord.wordType">{{ selectedWord.wordType }}</div>
+          <div class="hanzi-large">{{ selectedWord.hanzi }}</div>
+          <div class="action-buttons">
+            <button class="btn-stroke" (click)="openStrokeModal()">✍️ Nét viết</button>
+            <button class="btn-audio" (click)="playAudio($event, selectedWord)">🔊 Đọc mẫu</button>
+          </div>
+        </div>
+
+        <div class="word-details">
+          <div class="pinyin-large">{{ selectedWord.pinyin }}</div>
+          <div class="meaning-large">→ {{ selectedWord.meaning }}</div>
+          <div class="sino-viet" *ngIf="selectedWord.sinoVietnamese">Âm Hán Việt: {{ selectedWord.sinoVietnamese }}</div>
+        </div>
+
+        <div class="examples-list" *ngIf="selectedWord.examples?.length">
+          <div class="example-card" *ngFor="let ex of selectedWord.examples">
+            <div class="ex-content">
+              <div class="ex-hanzi">{{ ex.hanzi }}</div>
+              <div class="ex-pinyin">{{ ex.pinyin }}</div>
+              <div class="ex-meaning">{{ ex.meaning }}</div>
+            </div>
+            <button class="btn-ex-audio" (click)="playExampleAudio($event, ex.hanzi)">🔊</button>
+          </div>
+        </div>
+
+        <!-- Recording & Assessment Feedback (Image 11 & Image 8) -->
+        <div class="recording-section">
+          <button class="btn-record" (click)="recordAudio()" [class.recording]="isRecording">
+            <span class="icon">🎤</span>
+            <span>{{ isRecording ? 'Đang chấm điểm...' : 'Ghi âm' }}</span>
+          </button>
+
+          <div class="pronunciation-feedback-card" *ngIf="pronunciationResult">
+            <div class="score-row">
+              <span class="score-badge">{{ pronunciationResult.score }}/10</span>
+              <span class="comment-text">{{ pronunciationResult.comment }}</span>
+            </div>
+            <p class="feedback-sub">{{ pronunciationResult.feedback }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stroke Order Modal (Image 13) -->
+  <div class="stroke-modal-overlay" *ngIf="isStrokeModalOpen" (click)="closeStrokeModal()">
+    <div class="stroke-modal-card" (click)="$event.stopPropagation()">
+      <div class="stroke-modal-header">
+        <div class="title-area">
+          <h3>✍️ Thứ tự nét viết 笔顺</h3>
+          <p>{{ selectedWord?.hanzi }} — {{ selectedWord?.meaning }}</p>
+        </div>
+        <button class="btn-stroke-close" (click)="closeStrokeModal()">✕ Đóng</button>
+      </div>
+
+      <div class="hanzi-boxes-row">
+        <div class="hanzi-char-box" *ngFor="let char of hanziCharacters; let idx = index">
+          <div [id]="'hanzi-target-' + idx" class="hanzi-svg-holder"></div>
+          <span class="char-label">{{ char }}</span>
+        </div>
+      </div>
+
+      <div class="stroke-controls">
+        <button class="btn-stroke-action btn-replay" (click)="animateStrokes()">
+          ▶ Xem lại từng nét
+        </button>
+        <button class="btn-stroke-action btn-practice" (click)="quizStrokes()">
+          ✏️ Tập viết theo
+        </button>
+      </div>
+
+      <p class="stroke-rule-hint">
+        Nét viết chạy tự động theo đúng quy tắc: ngang trước sổ sau, trên trước dưới sau, trái trước phải sau.
+      </p>
+    </div>
+  </div>
+</div>

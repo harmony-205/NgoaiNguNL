@@ -1,1 +1,69 @@
-<p>dashboard works!</p>
+<div class="dashboard-container">
+
+  <!-- Nút quay lại (chỉ hiển thị ở bước 2 và 3) -->
+  <div class="back-nav" *ngIf="currentStep > 1" (click)="goBack()">
+    <span class="back-icon">←</span> Quay lại chọn khoá
+  </div>
+
+  <div class="dashboard-header">
+    <h1 *ngIf="currentStep === 1"><span class="icon-home">🏠</span> Trang chủ</h1>
+    <h1 *ngIf="currentStep > 1"><span class="icon-course">{{ selectedCourse.icon }}</span> {{ selectedCourse.name }}
+    </h1>
+
+    <p *ngIf="currentStep === 1">Chọn khoá học bạn muốn bắt đầu.</p>
+    <p *ngIf="currentStep === 2">Chọn cấp độ bạn muốn học.</p>
+    <p *ngIf="currentStep === 3">Chọn cấp độ HSK bạn muốn bắt đầu.</p>
+  </div>
+
+  <!-- Bước 1: Chọn ngôn ngữ / luyện thi -->
+  <div class="courses-grid" *ngIf="currentStep === 1">
+    <ng-container *ngFor="let course of courses">
+      <div class="course-card"
+        [ngClass]="{'upcoming': course.status === 'upcoming', 'active': course.status === 'active'}"
+        (click)="selectCourse(course)">
+        <div class="card-icon">{{ course.icon }}</div>
+        <div class="card-content">
+          <h3>{{ course.name }}</h3>
+          <p>{{ course.description }}</p>
+        </div>
+        <div class="card-badge" *ngIf="course.status === 'upcoming'">
+          Sắp ra mắt
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Bước 2: Chọn cấp độ Sơ cấp / Trung - Cao cấp -->
+  <div class="courses-grid" *ngIf="currentStep === 2">
+    <ng-container *ngFor="let level of levels">
+      <div class="course-card"
+        [ngClass]="{'upcoming': level.status === 'upcoming', 'active': level.status === 'active'}"
+        (click)="selectLevel(level)">
+        <div class="card-icon">{{ level.icon }}</div>
+        <div class="card-content">
+          <h3>{{ level.name }}</h3>
+          <p>{{ level.description }}</p>
+        </div>
+        <div class="card-badge" *ngIf="level.status === 'upcoming'">
+          Sắp ra mắt
+        </div>
+      </div>
+    </ng-container>
+  </div>
+
+  <!-- Bước 3: Chọn HSK 1, 2, 3 -->
+  <div class="sublevels-container" *ngIf="currentStep === 3">
+    <div class="sublevel-card" (click)="goToSubLevel('hsk1')">
+      <div class="hsk-badge">HSK 1</div>
+      <h3>Người mới bắt đầu</h3>
+    </div>
+    <div class="sublevel-card" (click)="goToSubLevel('hsk2')">
+      <div class="hsk-badge">HSK 2</div>
+      <h3>Sơ cấp</h3>
+    </div>
+    <div class="sublevel-card" (click)="goToSubLevel('hsk3')">
+      <div class="hsk-badge">HSK 3</div>
+      <h3>Sơ trung cấp</h3>
+    </div>
+  </div>
+</div>

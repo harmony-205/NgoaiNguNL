@@ -1,0 +1,81 @@
+<div class="grammar-container">
+  <div class="header">
+    <div class="title-badge">📐 {{ data.title }}</div>
+    <p class="description">Những điểm ngữ pháp trọng tâm của bài.</p>
+  </div>
+
+  <div class="grammar-rule" *ngFor="let rule of displayRules; let i = index">
+    <div class="rule-header">
+      <div class="number-badge">{{ i + 1 }}</div>
+      <h3 class="rule-title">{{ rule.title }}</h3>
+    </div>
+
+    <div class="rule-body">
+      <div class="explanation-box">
+        <div class="usage" *ngIf="rule.usage">
+          <span class="label">CÁCH DÙNG</span> {{ rule.usage }}
+        </div>
+        <div class="note" *ngIf="rule.note">
+          <span class="label">LƯU Ý</span> {{ rule.note }}
+        </div>
+        <div class="general" *ngIf="rule.explanation && !rule.usage && !rule.note">
+          {{ rule.explanation }}
+        </div>
+      </div>
+
+      <div class="examples-table">
+        <div class="table-header">
+          <div class="col-hanzi">Câu tiếng Trung</div>
+          <div class="col-pinyin">Phiên âm</div>
+          <div class="col-meaning">Nghĩa tiếng Việt</div>
+          <div class="col-audio">Đọc</div>
+        </div>
+        <div class="table-row" *ngFor="let ex of rule.examples">
+          <div class="col-hanzi">{{ ex.hanzi }}</div>
+          <div class="col-pinyin">{{ ex.pinyin }}</div>
+          <div class="col-meaning">{{ ex.meaning }}</div>
+          <div class="col-audio">
+            <button class="btn-audio-small" (click)="speakExample(ex.hanzi)">🔊</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="practice-section" *ngFor="let prac of rule.practice; let pIdx = index">
+        <div class="practice-title" *ngIf="pIdx === 0">📝 Luyện tập điểm ngữ pháp này</div>
+        <div class="practice-desc" *ngIf="pIdx === 0">Bấm các từ theo đúng thứ tự - Bấm từ đã đặt để xóa.</div>
+
+        <div class="question-text">{{ prac.questionText }}</div>
+
+        <div class="drop-zone" [class.correct]="practiceSubmitted[rule.id + '_' + pIdx] && isCorrect(rule, pIdx)"
+          [class.incorrect]="practiceSubmitted[rule.id + '_' + pIdx] && !isCorrect(rule, pIdx)" cdkDropList
+          cdkDropListOrientation="horizontal" (cdkDropListDropped)="drop($event, rule, pIdx)">
+          <div class="word-chip placed" cdkDrag *ngFor="let ansId of practiceAnswers[rule.id + '_' + pIdx]"
+            (click)="removeWord(rule, pIdx, ansId)">
+            <span class="pinyin" *ngIf="getWordPinyin(rule, pIdx, ansId)">{{ getWordPinyin(rule, pIdx, ansId) }}</span>
+            <span class="hanzi">{{ getWordText(rule, pIdx, ansId) }}</span>
+          </div>
+        </div>
+
+        <div class="source-zone">
+          <div class="word-chip" *ngFor="let word of getAvailableWords(rule, pIdx)" (click)="selectWord(rule, pIdx, word.id)">
+            <span class="pinyin" *ngIf="word.pinyin">{{ word.pinyin }}</span>
+            <span class="hanzi">{{ word.text }}</span>
+          </div>
+        </div>
+
+        <div class="result-message" *ngIf="practiceSubmitted[rule.id + '_' + pIdx]">
+          <div class="correct-answer">
+            <span class="label">Đáp án đúng: </span> <span class="text">{{ getCorrectAnswersText(rule, pIdx) }}</span>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="btn-primary" (click)="checkAnswer(rule, pIdx)" *ngIf="!practiceSubmitted[rule.id + '_' + pIdx]">Kiểm tra</button>
+          <button class="btn-secondary" (click)="resetAnswer(rule, pIdx)" *ngIf="practiceSubmitted[rule.id + '_' + pIdx]">Làm lại</button>
+          <button class="btn-audio-white" (click)="speakPractice(rule, pIdx)" *ngIf="practiceSubmitted[rule.id + '_' + pIdx]">🔊 Đọc mẫu</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

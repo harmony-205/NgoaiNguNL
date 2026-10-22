@@ -1,0 +1,157 @@
+<div class="admin-container">
+  <!-- Header (Matching image 9) -->
+  <div class="admin-header-row">
+    <div>
+      <h1 class="page-title">Thống kê tổng quan</h1>
+      <p class="subtitle">
+        Cập nhật lúc {{ currentTime }} 
+        <span class="admin-only-badge">Chỉ admin thấy</span>
+      </p>
+    </div>
+    <div class="admin-actions-group" style="display: flex; align-items: center; gap: 12px;">
+      <a routerLink="/dashboard" style="display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; background: white; border: 1px solid #cbd5e1; border-radius: 9999px; text-decoration: none; color: #475569; font-size: 13px; font-weight: 500;">
+        <span>← Về khóa học</span>
+      </a>
+      <div class="admin-user-pill">
+        <div class="admin-avatar">H</div>
+        <span>Admin</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stat Cards (Image 9: 3.900 tổng tài khoản đã đăng ký, bỏ tổng lượt hoàn thành, thêm 2 bảng phân loại) -->
+  <div class="stats-overview-grid">
+    <!-- Card 1: Tổng tài khoản đã đăng ký -->
+    <div class="stat-box">
+      <div class="icon-circle icon-users">👥</div>
+      <div class="stat-content">
+        <div class="stat-number">{{ totalRegisteredUsers | number }}</div>
+        <div class="stat-label">Tổng tài khoản đã đăng ký</div>
+      </div>
+    </div>
+
+    <!-- Card 2: Học viên tại Trung tâm -->
+    <div class="stat-box" [class.highlighted]="activeTab === 'internal'" (click)="activeTab = 'internal'">
+      <div class="icon-circle icon-school">🏫</div>
+      <div class="stat-content">
+        <div class="stat-number">{{ internalCount | number }}</div>
+        <div class="stat-label">Học viên tại Trung tâm</div>
+        <div class="stat-sub">Có thông tin Lớp / GV Zalo</div>
+      </div>
+    </div>
+
+    <!-- Card 3: Học viên ngoài Trung tâm -->
+    <div class="stat-box" [class.highlighted]="activeTab === 'external'" (click)="activeTab = 'external'">
+      <div class="icon-circle icon-globe">🌐</div>
+      <div class="stat-content">
+        <div class="stat-number">{{ externalCount | number }}</div>
+        <div class="stat-label">Học viên ngoài Trung tâm</div>
+        <div class="stat-sub">Tài khoản tự do / vãng lai</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter & Tab Navigation -->
+  <div class="table-section-card">
+    <div class="table-toolbar">
+      <div class="tabs-group">
+        <button class="tab-btn" [class.active]="activeTab === 'internal'" (click)="activeTab = 'internal'">
+          🏫 Học viên tại Trung tâm ({{ internalCount }})
+        </button>
+        <button class="tab-btn" [class.active]="activeTab === 'external'" (click)="activeTab = 'external'">
+          🌐 Học viên ngoài Trung tâm ({{ externalCount }})
+        </button>
+      </div>
+
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" [(ngModel)]="searchQuery" placeholder="Tìm theo tên, email, lớp..." />
+      </div>
+    </div>
+
+    <!-- Table 1: Học viên tại Trung tâm -->
+    <div class="table-responsive" *ngIf="activeTab === 'internal'">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Họ và tên</th>
+            <th>Email</th>
+            <th>Khóa học</th>
+            <th>Lớp/Khóa + GV (Nhóm Zalo)</th>
+            <th>Ngày đăng ký</th>
+            <th>Quyền HSK 4-6</th>
+            <th>Thao tác</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let student of internalStudents; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td class="font-bold">{{ student.fullName }}</td>
+            <td>{{ student.email }}</td>
+            <td>
+              <span class="course-tag">{{ student.course }}</span>
+            </td>
+            <td class="zalo-class-cell">
+              <span class="zalo-icon">💬</span>
+              <strong>{{ student.classTeacherZalo }}</strong>
+            </td>
+            <td>{{ student.registeredDate }}</td>
+            <td>
+              <span class="status-badge" [class.approved]="student.hskAdvanceApproved" [class.pending]="!student.hskAdvanceApproved">
+                {{ student.hskAdvanceApproved ? 'Đã duyệt HSK 4-6' : 'Chưa duyệt' }}
+              </span>
+            </td>
+            <td>
+              <button class="btn-toggle-hsk" 
+                [class.btn-revoke]="student.hskAdvanceApproved" 
+                (click)="toggleHskApproval(student)">
+                {{ student.hskAdvanceApproved ? 'Khóa HSK 4-6' : 'Duyệt mở khóa' }}
+              </button>
+            </td>
+          </tr>
+          <tr *ngIf="internalStudents.length === 0">
+            <td colspan="8" class="empty-cell">Không tìm thấy học viên nào phù hợp.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Table 2: Học viên ngoài Trung tâm -->
+    <div class="table-responsive" *ngIf="activeTab === 'external'">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>STT</th>
+            <th>Họ và tên</th>
+            <th>Email</th>
+            <th>Khóa đăng ký</th>
+            <th>Ngày tham gia</th>
+            <th>Phân loại</th>
+            <th>Trạng thái tài khoản</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let student of externalStudents; let i = index">
+            <td>{{ i + 1 }}</td>
+            <td class="font-bold">{{ student.fullName }}</td>
+            <td>{{ student.email }}</td>
+            <td>
+              <span class="course-tag">{{ student.course }}</span>
+            </td>
+            <td>{{ student.registeredDate }}</td>
+            <td>
+              <span class="type-pill">Học viên ngoài TT</span>
+            </td>
+            <td>
+              <span class="status-badge active-badge">Đang hoạt động</span>
+            </td>
+          </tr>
+          <tr *ngIf="externalStudents.length === 0">
+            <td colspan="7" class="empty-cell">Không tìm thấy học viên nào phù hợp.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

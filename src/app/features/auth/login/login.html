@@ -22,13 +22,13 @@
         <label>Mật khẩu</label>
         <input type="password" formControlName="password" placeholder="••••••••" />
       </div>
-      
+
       <div class="form-actions">
         <a href="#" class="forgot-password">Quên mật khẩu?</a>
       </div>
 
       <button type="submit" class="btn-submit" [disabled]="loginForm.invalid">Đăng nhập</button>
-      
+
       <div class="divider"><span>HOẶC</span></div>
       <button type="button" class="btn-google">
         <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" />
@@ -39,7 +39,7 @@
     <!-- Register Form -->
     <form *ngIf="!isLoginMode" [formGroup]="registerForm" (ngSubmit)="onRegisterSubmit()" class="auth-form fade-in">
       <div class="form-group">
-        <label>Họ và tên</label>
+        <label>Họ và tên <span class="required">*</span></label>
         <input type="text" formControlName="fullName" placeholder="Ví dụ: Nguyễn Minh Anh" />
       </div>
 
@@ -68,26 +68,81 @@
       </div>
 
       <div class="form-group">
-        <label>Email</label>
+        <label>Email<span class="required">*</span></label>
         <input type="email" formControlName="email" placeholder="ban@email.com" />
+        <ng-container *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
+
+          <div class="error-message">
+            <span *ngIf="registerForm.get('email')?.hasError('required')">
+              Vui lòng nhập email
+            </span>
+            <span *ngIf="registerForm.get('email')?.hasError('pattern')">
+              Vui lòng nhập đúng định dạng email
+            </span>
+          </div>
+        </ng-container>
       </div>
 
       <div class="form-group">
-        <label>Tên đăng nhập</label>
+        <label>Tên đăng nhập<span class="required">*</span></label>
         <input type="text" formControlName="username" placeholder="Ví dụ: josee" />
       </div>
 
       <div class="form-group">
-        <label>Mật khẩu</label>
+        <label>Mật khẩu<span class="required">*</span></label>
         <input type="password" formControlName="password" placeholder="••••••••" />
+        <ng-container *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+          <div class="error-message">
+            <span *ngIf="registerForm.get('password')?.hasError('required')">
+              Vui lòng nhập mật khẩu
+            </span>
+            <span *ngIf="registerForm.get('password')?.hasError('pattern')">
+              Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và chữ số.
+            </span>
+          </div>
+        </ng-container>
       </div>
 
       <div class="form-group">
-        <label>Nhập lại mật khẩu</label>
+        <label>Nhập lại mật khẩu<span class="required">*</span></label>
         <input type="password" formControlName="confirmPassword" placeholder="••••••••" />
+        <ng-container
+          *ngIf="registerForm.get('confirmPassword')?.touched && registerForm.get('confirmPassword')?.invalid">
+          <div class="error-message">
+            <span *ngIf="registerForm.get('confirmPassword')?.hasError('required')">
+              Vui lòng nhập lại mật khẩu
+            </span>
+            <span *ngIf="registerForm.get('confirmPassword')?.hasError('mismatch')">
+              Mật khẩu không khớp
+            </span>
+          </div>
+        </ng-container>
+      </div>
+
+      <!-- Captcha -->
+      <div class="form-group captcha-group">
+        <label>Mã bảo vệ Captcha <span class="required">*</span></label>
+        <div class="captcha-box">
+          <div class="captcha-badge" (click)="generateCaptcha()" title="Bấm để đổi mã khác">
+            <span class="calc-text">{{ captchaQuestion }}</span>
+            <span class="refresh-icon">🔄</span>
+          </div>
+          <input type="text" formControlName="captcha" placeholder="Nhập kết quả" class="captcha-input" />
+        </div>
+        <ng-container *ngIf="registerForm.get('captcha')?.touched && registerForm.hasError('captchaInvalid')">
+          <div class="error-message">
+            <span>Kết quả phép tính không đúng, vui lòng thử lại</span>
+          </div>
+        </ng-container>
       </div>
 
       <button type="submit" class="btn-submit" [disabled]="registerForm.invalid">Tạo tài khoản</button>
+
+      <div class="divider"><span>HOẶC</span></div>
+      <button type="button" class="btn-google" (click)="signUpWithGoogle()">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" />
+        Tạo tài khoản bằng Google
+      </button>
     </form>
   </div>
 </div>

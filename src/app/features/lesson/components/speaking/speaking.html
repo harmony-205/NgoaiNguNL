@@ -1,0 +1,119 @@
+<div class="speaking-container">
+  <div class="header">
+    <div class="title-row">
+      <span class="icon">🗣️</span>
+      <span class="title-text">{{ data.title }}</span>
+    </div>
+    <p class="description">Nói thoải mái theo ý bạn — máy chỉ chấm PHÁT ÂM (âm + thanh điệu), không chấm nội dung hay ngữ pháp.</p>
+  </div>
+
+  <!-- Part A: Đọc theo mẫu -->
+  <div class="section-container" *ngIf="data.readingTasks && data.readingTasks.length > 0">
+    <div class="section-header">
+      <h3>A · Đọc theo mẫu — luyện âm chuẩn</h3>
+      <p class="sub-desc">Nghe mẫu 🔊 → đọc to → ghi âm 🎙 (tối đa 2 lượt mỗi câu). Phần trong [ ] là chỗ tự điền, đọc phần còn lại là được.</p>
+    </div>
+
+    <div class="tasks-list">
+      <div class="task-card" *ngFor="let task of data.readingTasks; let i = index">
+        <div class="task-main-row">
+          <div class="letter-badge">{{ ['A', 'B', 'C', 'D', 'E', 'F', 'G'][i] }}</div>
+          
+          <div class="task-text-group">
+            <div class="hanzi-line">{{ task.hanzi }}</div>
+            <div class="pinyin-line">{{ task.pinyin }}</div>
+            <div class="meaning-line">{{ task.meaning }}</div>
+          </div>
+
+          <div class="task-actions">
+            <button class="btn-sample-audio" (click)="playAudio(task)">
+              <span class="icon">🔊</span> Nghe mẫu
+            </button>
+            <span class="attempts-pill">{{ getAttemptsText(task.id) }}</span>
+            <button class="btn-record" [class.recording]="getStatus(task.id) === 'recording'"
+              (click)="toggleRecording(task.id, task.hanzi, task.pinyin)">
+              <span class="icon" *ngIf="getStatus(task.id) === 'idle'">🎤 Ghi âm</span>
+              <span class="icon recording-pulse" *ngIf="getStatus(task.id) === 'recording'">⏹️ Đang ghi âm...</span>
+              <span class="icon" *ngIf="getStatus(task.id) === 'done'">🎙️ Ghi lại</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Evaluation Box matching Image 8 -->
+        <div class="evaluation-box" *ngIf="getStatus(task.id) === 'done' && evaluations[task.id]">
+          <div class="score-header">
+            <span class="score-badge">{{ evaluations[task.id].score }}/10</span>
+            <span class="score-message">{{ evaluations[task.id].message }}</span>
+          </div>
+
+          <div class="breakdown-pills">
+            <span class="breakdown-item">Âm (声母+韵母): <strong>{{ evaluations[task.id].pinyinScore }}/10</strong></span>
+            <span class="breakdown-item">Thanh điệu (声调): <strong>{{ evaluations[task.id].toneScore }}/10</strong></span>
+            <span class="breakdown-item">Độ rõ giọng: <strong>{{ evaluations[task.id].clarityScore }}/10</strong></span>
+          </div>
+
+          <div class="words-display">
+            <div class="spaced-hanzi">{{ task.hanzi }}</div>
+            <div class="eval-detail"><strong>Pinyin chuẩn:</strong> {{ evaluations[task.id].pinyinStandard }}</div>
+            <div class="eval-detail"><strong>Bạn đọc:</strong> {{ evaluations[task.id].pinyinUser }}</div>
+            <div class="eval-detail"><strong>Máy nghe được:</strong> {{ evaluations[task.id].machineRecognized }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Part B: Nói tự do -->
+  <div class="section-container" *ngIf="data.freeSpeakingTasks && data.freeSpeakingTasks.length > 0">
+    <div class="section-header">
+      <h3>B · Nói tự do</h3>
+      <p class="sub-desc">Trả lời theo ý bạn. Viết câu trả lời hoặc thu âm vào ô bên dưới.</p>
+    </div>
+
+    <div class="tasks-list free-speaking">
+      <div class="task-card" *ngFor="let task of data.freeSpeakingTasks; let i = index">
+        <div class="task-main-row">
+          <div class="letter-badge">{{ i + 1 }}</div>
+          
+          <div class="task-text-group">
+            <div class="hanzi-line">{{ task.topic }}</div>
+            <div class="pinyin-line" *ngIf="task.pinyin">{{ task.pinyin }}</div>
+            <div class="meaning-line" *ngIf="task.suggestion">{{ task.suggestion }}</div>
+          </div>
+
+          <div class="task-actions">
+            <button class="btn-sample-audio" (click)="playFreeTopicAudio(task)">
+              <span class="icon">🔊</span> Nghe câu hỏi
+            </button>
+            <span class="attempts-pill">{{ getAttemptsText(task.id) }}</span>
+            <button class="btn-record" [class.recording]="getStatus(task.id) === 'recording'"
+              (click)="toggleRecording(task.id, task.topic, task.pinyin)">
+              <span class="icon" *ngIf="getStatus(task.id) === 'idle'">🎤 Ghi âm</span>
+              <span class="icon recording-pulse" *ngIf="getStatus(task.id) === 'recording'">⏹️ Đang thu...</span>
+              <span class="icon" *ngIf="getStatus(task.id) === 'done'">🎙️ Thu lại</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="free-answer-area">
+          <textarea class="free-text-area" rows="2" placeholder="Gõ câu trả lời của bạn..."
+            [(ngModel)]="freeSpeakingAnswers[task.id]" (ngModelChange)="saveAnswer(task.id)"></textarea>
+        </div>
+
+        <!-- Evaluation Box for Free Speaking -->
+        <div class="evaluation-box" *ngIf="getStatus(task.id) === 'done' && evaluations[task.id]">
+          <div class="score-header">
+            <span class="score-badge">{{ evaluations[task.id].score }}/10</span>
+            <span class="score-message">{{ evaluations[task.id].message }}</span>
+          </div>
+
+          <div class="breakdown-pills">
+            <span class="breakdown-item">Âm (声母+韵母): <strong>{{ evaluations[task.id].pinyinScore }}/10</strong></span>
+            <span class="breakdown-item">Thanh điệu (声调): <strong>{{ evaluations[task.id].toneScore }}/10</strong></span>
+            <span class="breakdown-item">Độ rõ giọng: <strong>{{ evaluations[task.id].clarityScore }}/10</strong></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,63 @@
+<div class="conversation-container">
+  <div class="header">
+    <div class="title-badge">💬 {{ data.title }}</div>
+    <p class="description">Các tình huống hội thoại trong bài học.</p>
+  </div>
+
+  <div class="tabs-container" *ngIf="data.sections && data.sections.length > 1">
+    <button class="tab-button" 
+            *ngFor="let section of data.sections" 
+            [class.active]="activeSectionId === section.id"
+            (click)="selectSection(section.id)">
+      {{ section.title }}
+    </button>
+  </div>
+
+  <ng-container *ngFor="let section of data.sections">
+    <div class="conversation-box" *ngIf="activeSectionId === section.id">
+      <div class="section-banner">
+        <span class="location-tag">📍 {{ section.title }}</span>
+        <button class="btn-play-all" (click)="playFullSection(section)">🔊 Đọc mẫu cả đoạn</button>
+      </div>
+
+      <div class="turn" *ngFor="let turn of section.turns" [class.recording-active]="recordingTurnId === turn.id">
+
+        <div class="turn-header">
+          <div class="avatar">{{ turn.avatar }}</div>
+          <div class="role-name">{{ turn.role }}</div>
+        </div>
+
+        <div class="turn-content">
+          <div class="text-content">
+            <div class="hanzi">{{ turn.hanzi }}</div>
+            <div class="pinyin">{{ turn.pinyin }}</div>
+            <div class="meaning">{{ turn.meaning }}</div>
+          </div>
+
+          <div class="actions">
+            <button class="btn-audio" (click)="playAudio(turn)">🔊 Đọc mẫu</button>
+
+            <div class="record-section">
+              <button class="btn-record" (click)="startRecording(turn)"
+                [class.recording]="isRecording && recordingTurnId === turn.id">
+                🎤 {{ isRecording && recordingTurnId === turn.id ? 'Đang ghi âm...' : 'Ghi âm' }}
+              </button>
+              <div class="score-feedback" *ngIf="recordingScore && recordingTurnId === turn.id">
+                <div class="score-box" [class.excellent]="recordingScore >= 90" [class.good]="recordingScore < 90">
+                  <span class="score-label">Điểm:</span>
+                  <span class="score-value">{{ recordingScore }}</span>
+                  <span class="score-max">/100</span>
+                </div>
+                <div class="praise-message" *ngIf="recordingScore >= 90">🎉 Phát âm quá chuẩn, xuất sắc!</div>
+                <div class="praise-message good" *ngIf="recordingScore >= 50 && recordingScore < 90">💪 Tốt lắm! Luyện tập
+                  thêm chút nữa nhé.</div>
+                <div class="praise-message bad" *ngIf="recordingScore < 50">❌ Cố gắng lên, nghe lại và thử lại nhé!</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </ng-container>
+</div>

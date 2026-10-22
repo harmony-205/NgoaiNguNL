@@ -1,8 +1,11 @@
-import { HanziWriter } from './hanzi-writer';
+import { ElementRef } from '@angular/core';
+import { HanziWriterDirective } from './hanzi-writer';
 
-describe('HanziWriter', () => {
+describe('HanziWriterDirective', () => {
   it('should create an instance', () => {
-    const directive = new HanziWriter();
+    const mockElementRef = new ElementRef(document.createElement('div'));
+    const directive = new HanziWriterDirective(mockElementRef);
     expect(directive).toBeTruthy();
   });
 });
+

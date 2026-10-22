@@ -1,1 +1,119 @@
-<p>course-detail works!</p>
+<div class="course-learning-container" [ngClass]="activeTheme">
+
+  <!-- Center Presentation Header Banner (Image 15) -->
+  <div class="center-intro-banner">
+    <div class="banner-top">
+      <div class="brand-left">
+        <img src="assets/logo.jpg" alt="Logo" class="center-logo" />
+        <div class="brand-titles">
+          <h2 class="center-title">Ngoại Ngữ Nghiêm Linh</h2>
+          <p class="center-slogan-1">Nỗ lực · Kiên trì · Bứt phá</p>
+          <p class="center-slogan-2">Học thêm ngoại ngữ mới · Mở thêm vạn cơ hội</p>
+          <div class="banner-badges">
+            <span class="badge streak-badge">🔥 Chuỗi {{ streakDays }} ngày 连续0天</span>
+            <span class="badge month-badge">📅 Tháng này: {{ monthStudyDays }} 本月0天</span>
+            <span class="badge date-badge">🗓️ {{ currentDateFormatted }}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="teacher-avatar-section">
+        <div class="avatar-ring">
+          <img src="assets/teacher-nghiem-linh.png" alt="Cô Nghiêm Linh" onerror="this.src='assets/logo.jpg'" />
+        </div>
+        <span class="teacher-name">Nghiêm Linh</span>
+      </div>
+    </div>
+
+    <div class="banner-divider"></div>
+
+    <div class="banner-content">
+      <h3 class="banner-headline">NGOẠI NGỮ NGHIÊM LINH</h3>
+      <p class="banner-desc">
+        Ngoại ngữ Nghiêm Linh chuyên đào tạo tiếng Trung theo lộ trình bài bản, phù hợp với nhiều đối tượng học viên và mục tiêu học tập khác nhau.
+      </p>
+
+      <h4 class="sub-headline">Các khóa học tại Ngoại Ngữ Nghiêm Linh:</h4>
+      <div class="course-bullets-grid">
+        <div class="bullet-item">• Lớp tiếng Trung online đa dạng trình độ, từ người mới bắt đầu đến các khóa học nâng cao.</div>
+        <div class="bullet-item">• Lớp học 1 kèm 1 với lịch học linh hoạt, cá nhân hóa theo nhu cầu của từng học viên.</div>
+        <div class="bullet-item">• Lớp sửa phát âm chuyên sâu, giúp xây dựng nền tảng phát âm chuẩn ngay từ đầu.</div>
+        <div class="bullet-item">• Lớp luyện thi cấp tốc dành cho các kỳ thi HSK và các mục tiêu học tập cụ thể.</div>
+      </div>
+
+      <h4 class="sub-headline">Đội ngũ giáo viên</h4>
+      <p class="banner-desc">
+        Đội ngũ giáo viên của Ngoại Ngữ Nghiêm Linh là những cử nhân chuyên ngành Ngôn ngữ Trung Quốc tốt nghiệp từ các trường đại học đào tạo ngoại ngữ uy tín, trong đó có các giáo viên đã trúng tuyển và đang theo học hoặc đã hoàn thành chương trình thạc sĩ tại Trung Quốc. Với phát âm chuẩn, chuyên môn vững vàng và kinh nghiệm giảng dạy thực tế, đội ngũ giáo viên luôn tận tâm đồng hành, giúp học viên xây dựng nền tảng tiếng Trung vững chắc và tiến bộ một cách hiệu quả.
+      </p>
+    </div>
+  </div>
+
+  <!-- HSK Tabs (HSK 1, 2, 3 open; HSK 4, 5, 6 locked/admin approval) -->
+  <div class="hsk-tabs">
+    <div class="hsk-tab" *ngFor="let level of hskLevels" 
+      [class.active]="currentHsk === level.id"
+      [class.is-locked]="isLevelLocked(level.id)"
+      [ngClass]="level.id"
+      (click)="selectHsk(level.id)">
+      <span>{{ level.name }}</span>
+      <span class="lock-indicator" *ngIf="isLevelLocked(level.id)">🔒</span>
+    </div>
+  </div>
+
+  <!-- Locked Course Alert Modal -->
+  <div class="locked-modal-overlay" *ngIf="isLockedModalOpen" (click)="closeLockedModal()">
+    <div class="locked-modal-card" (click)="$event.stopPropagation()">
+      <div class="modal-icon">🔒</div>
+      <h3>Khóa học {{ lockedLevelName }}</h3>
+      <p class="modal-msg">
+        Khóa học hiện đang trong quá trình biên soạn giáo trình mới (Sắp ra mắt) hoặc yêu cầu <strong>Admin phê duyệt</strong> tài khoản để mở bài học.
+      </p>
+      <p class="modal-sub">Vui lòng liên hệ với ban quản trị hoặc giáo viên phụ trách để được cấp quyền học cấp độ này.</p>
+      <div class="modal-actions">
+        <button class="btn-modal-close" (click)="closeLockedModal()">Đã hiểu</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Units Path (Calendar Grid) -->
+  <div class="calendar-container">
+
+    <div class="unit-wrapper" *ngFor="let unit of units"
+         [class.is-active]="unit.id === activeUnitId">
+      
+      <!-- Unit Circle Button -->
+      <div class="unit-button" 
+           [class.active]="unit.id === activeUnitId"
+           [class.unstarted]="unit.completedLessons === 0"
+           (click)="toggleUnit($event, unit.id)">
+           
+        <!-- SVG Progress Ring (Outside) - Always displayed -->
+        <svg class="progress-ring" viewBox="0 0 100 100">
+          <circle class="ring-bg" cx="50" cy="50" r="46" />
+          <circle class="ring-fill" cx="50" cy="50" r="46" 
+                  [style.stroke-dasharray]="289" 
+                  [style.stroke-dashoffset]="289 - (289 * unit.completedLessons / unit.totalLessons)" />
+        </svg>
+
+        <!-- Unit Icon (Flat Number) -->
+        <div class="unit-icon">
+          <span>{{ unit.id }}</span>
+        </div>
+      </div>
+
+      <!-- Tooltip Dialog -->
+      <div class="unit-tooltip" *ngIf="unit.id === activeUnitId" (click)="$event.stopPropagation()">
+        <div class="tooltip-arrow"></div>
+        <div class="tooltip-content">
+          <h3>{{ unit.title }}</h3>
+          <p>Tiến độ: {{ unit.completedLessons }} / {{ unit.totalLessons }} bài</p>
+          <button class="btn-action" (click)="startUnit($event, unit)">
+            {{ getUnitActionText(unit) }}
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>

@@ -1,0 +1,128 @@
+<div class="teacher-page-container">
+  <!-- Profile Hero Header -->
+  <div class="teacher-hero-card">
+    <div class="avatar-wrapper">
+      <img src="assets/teacher-nghiem-linh.png" alt="Cô Nghiêm Linh" class="teacher-avatar" onerror="this.src='assets/logo.jpg'" />
+      <span class="badge-verified">✓</span>
+    </div>
+    <h1 class="teacher-name">Cô Nghiêm Linh</h1>
+    <p class="teacher-tagline">
+      10 năm kinh nghiệm học tiếng Nhật và hơn 6 năm kinh nghiệm học tiếng Trung
+    </p>
+
+    <div class="quick-contact-pills">
+      <a href="https://zalo.me/0385780185" target="_blank" class="pill-btn zalo-btn">
+        <span>💬 Zalo: 0385780185</span>
+      </a>
+      <a href="https://www.facebook.com/share/1EwT9r5Gte/?mibextid=wwXIfr" target="_blank" class="pill-btn fb-btn">
+        <span>👤 Facebook: Nghiêm Linh</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Social & Community Links (image 5) -->
+  <div class="section-card">
+    <div class="section-title-row">
+      <span class="icon">🌐</span>
+      <h2>LIÊN HỆ & CỘNG ĐỒNG</h2>
+    </div>
+    <div class="social-links-grid">
+      <a *ngFor="let item of socialLinks" [href]="item.link" target="_blank" class="social-card">
+        <div class="social-icon" [style.background-color]="item.color + '15'" [style.color]="item.color">
+          {{ item.icon }}
+        </div>
+        <div class="social-info">
+          <h4>{{ item.title }}</h4>
+          <p>{{ item.subtitle }}</p>
+        </div>
+        <span class="arrow-right">→</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats Grid (image 22) -->
+  <div class="section-card">
+    <div class="section-title-row">
+      <span class="icon">📊</span>
+      <h2>Kinh nghiệm giảng dạy</h2>
+    </div>
+    <div class="stats-grid">
+      <div *ngFor="let stat of stats" class="stat-card">
+        <div class="stat-icon">{{ stat.icon }}</div>
+        <div class="stat-number">{{ stat.number }}</div>
+        <div class="stat-label">{{ stat.label }}</div>
+      </div>
+    </div>
+
+    <div class="teaching-activities-box" style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 12px; border-left: 4px solid #3b82f6;">
+      <h4 style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">Hoạt động liên quan đến giảng dạy:</h4>
+      <ul style="list-style-type: disc; padding-left: 20px; color: #475569; display: flex; flex-direction: column; gap: 6px; font-size: 14px;">
+        <li *ngFor="let act of teachingActivities">{{ act }}</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Education & Scholarships (image 6) -->
+  <div class="section-card">
+    <div class="section-title-row">
+      <span class="icon">🎓</span>
+      <h2>Học vấn & Học bổng</h2>
+    </div>
+    <div class="education-timeline">
+      <div *ngFor="let edu of educations" class="edu-card">
+        <div class="edu-badge">🎓</div>
+        <div class="edu-body">
+          <h3>{{ edu.school }}</h3>
+          <p class="edu-major">{{ edu.major }}</p>
+          <span class="edu-note">{{ edu.note }}</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Certificates & Awards -->
+  <div class="two-column-section">
+    <!-- Certificates -->
+    <div class="section-card half-card">
+      <div class="section-title-row">
+        <span class="icon">🏅</span>
+        <h2>Chứng chỉ ngoại ngữ</h2>
+      </div>
+      <div class="cert-list">
+        <div *ngFor="let cert of certificates" class="cert-card">
+          <div class="cert-icon">📜</div>
+          <div>
+            <h4>{{ cert.title }}</h4>
+            <p>{{ cert.desc }}</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Awards & Media -->
+    <div class="section-card half-card">
+      <div class="section-title-row">
+        <span class="icon">✨</span>
+        <h2>Giải thưởng & Hoạt động</h2>
+      </div>
+      <div class="awards-list">
+        <div *ngFor="let award of awards" class="award-item">
+          <span class="bullet-star">⭐</span>
+          <p>{{ award }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom CTA -->
+  <div class="bottom-cta-banner">
+    <div class="cta-text">
+      <h3>Sẵn sàng chinh phục tiếng Trung cùng Ngoại Ngữ Nghiêm Linh?</h3>
+      <p>Lộ trình bài bản, cá nhân hóa theo từng mục tiêu học viên.</p>
+    </div>
+    <div class="cta-actions">
+      <a routerLink="/course/tieng-trung" class="btn-start-course">Bắt đầu học ngay</a>
+      <a href="https://zalo.me/0385780185" target="_blank" class="btn-chat-zalo">Nhắn Zalo tư vấn</a>
+    </div>
+  </div>
+</div>
