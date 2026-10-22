@@ -8,7 +8,7 @@ import { AudioService } from '../../../../core/services/audio';
   standalone: true,
   imports: [CommonModule],
   templateUrl: './vocabulary.html',
-  styleUrls: ['./vocabulary.scss']
+  styleUrl: './vocabulary.scss'
 })
 export class VocabularyComponent implements OnDestroy {
   @Input() data!: VocabularyData;
@@ -39,7 +39,8 @@ export class VocabularyComponent implements OnDestroy {
     this.isRecording = false;
   }
 
-  playAudio(event: Event, word: VocabItem) {
+  playAudio(event: Event, word: VocabItem | null) {
+    if (!word) return;
     event.stopPropagation();
     this.audioService.speakChinese(word.hanzi);
   }
@@ -74,7 +75,7 @@ export class VocabularyComponent implements OnDestroy {
       setTimeout(async () => {
         try {
           const HanziWriterModule = await import('hanzi-writer');
-          const HanziWriter = HanziWriterModule.default || HanziWriterModule;
+          const HanziWriter = (HanziWriterModule as any).default || HanziWriterModule;
 
           this.hanziWriters = [];
           this.hanziCharacters.forEach((char, index) => {

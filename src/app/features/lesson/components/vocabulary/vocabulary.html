@@ -27,29 +27,29 @@
   </div>
 
   <!-- Detail Modal (Image 11) -->
-  <div class="modal-overlay" *ngIf="selectedWord" (click)="closeDetail()">
+  <div class="modal-overlay" *ngIf="selectedWord as word" (click)="closeDetail()">
     <div class="modal-content" (click)="$event.stopPropagation()">
       <button class="btn-close" (click)="closeDetail()">✕ Đóng</button>
 
       <div class="modal-body">
         <div class="word-header">
-          <div class="number-badge">{{ data.words.indexOf(selectedWord) + 1 }}</div>
-          <div class="type-badge-large" *ngIf="selectedWord.wordType">{{ selectedWord.wordType }}</div>
-          <div class="hanzi-large">{{ selectedWord.hanzi }}</div>
+          <div class="number-badge">{{ data.words.indexOf(word) + 1 }}</div>
+          <div class="type-badge-large" *ngIf="word.wordType">{{ word.wordType }}</div>
+          <div class="hanzi-large">{{ word.hanzi }}</div>
           <div class="action-buttons">
             <button class="btn-stroke" (click)="openStrokeModal()">✍️ Nét viết</button>
-            <button class="btn-audio" (click)="playAudio($event, selectedWord)">🔊 Đọc mẫu</button>
+            <button class="btn-audio" (click)="playAudio($event, word)">🔊 Đọc mẫu</button>
           </div>
         </div>
 
         <div class="word-details">
-          <div class="pinyin-large">{{ selectedWord.pinyin }}</div>
-          <div class="meaning-large">→ {{ selectedWord.meaning }}</div>
-          <div class="sino-viet" *ngIf="selectedWord.sinoVietnamese">Âm Hán Việt: {{ selectedWord.sinoVietnamese }}</div>
+          <div class="pinyin-large">{{ word.pinyin }}</div>
+          <div class="meaning-large">→ {{ word.meaning }}</div>
+          <div class="sino-viet" *ngIf="word.sinoVietnamese">Âm Hán Việt: {{ word.sinoVietnamese }}</div>
         </div>
 
-        <div class="examples-list" *ngIf="selectedWord.examples?.length">
-          <div class="example-card" *ngFor="let ex of selectedWord.examples">
+        <div class="examples-list" *ngIf="word.examples?.length">
+          <div class="example-card" *ngFor="let ex of word.examples">
             <div class="ex-content">
               <div class="ex-hanzi">{{ ex.hanzi }}</div>
               <div class="ex-pinyin">{{ ex.pinyin }}</div>
