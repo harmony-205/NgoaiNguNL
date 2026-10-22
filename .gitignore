@@ -55,4 +55,8 @@ Thumbs.db
 # Local scratch and temp files
 temp_*
 docx_temp/
+*.docx
+*.doc
+*.tmp
+doc-images/
 

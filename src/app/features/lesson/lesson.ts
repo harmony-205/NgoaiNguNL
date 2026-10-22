@@ -70,9 +70,11 @@ export class Lesson implements OnInit, OnDestroy {
   ) { }
 
   ngOnInit(): void {
-    this.ngZone.runOutsideAngular(() => {
-      window.addEventListener('scroll', this.onGlobalScroll, true);
-    });
+    if (typeof window !== 'undefined') {
+      this.ngZone.runOutsideAngular(() => {
+        window.addEventListener('scroll', this.onGlobalScroll, true);
+      });
+    }
 
     // Lấy id từ route params, subscribe để tự update khi navigate cùng trang
     this.route.paramMap.subscribe(params => {
@@ -118,7 +120,9 @@ export class Lesson implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    window.removeEventListener('scroll', this.onGlobalScroll, true);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('scroll', this.onGlobalScroll, true);
+    }
   }
 
   onGlobalScroll = (event: Event) => {

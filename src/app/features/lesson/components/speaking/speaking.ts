@@ -40,14 +40,20 @@ export class SpeakingComponent implements OnInit {
     }
     if (this.data.freeSpeakingTasks) {
       this.data.freeSpeakingTasks.forEach(task => {
-        this.freeSpeakingAnswers[task.id] = localStorage.getItem(`freeSpeaking_${task.id}`) || '';
+        if (typeof window !== 'undefined' && window.localStorage) {
+          this.freeSpeakingAnswers[task.id] = localStorage.getItem(`freeSpeaking_${task.id}`) || '';
+        } else {
+          this.freeSpeakingAnswers[task.id] = '';
+        }
         this.attemptsLeft[task.id] = 2;
       });
     }
   }
 
   saveAnswer(taskId: string) {
-    localStorage.setItem(`freeSpeaking_${taskId}`, this.freeSpeakingAnswers[taskId]);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(`freeSpeaking_${taskId}`, this.freeSpeakingAnswers[taskId]);
+    }
   }
 
   getStatus(taskId: string) {

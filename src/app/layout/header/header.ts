@@ -29,8 +29,9 @@ export class HeaderComponent {
   openEditProfile() {
     this.isUserMenuOpen = false;
     // We will broadcast an event or use a service to open the modal
-    // For now, we'll dispatch a custom event
-    window.dispatchEvent(new CustomEvent('open-edit-profile'));
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('open-edit-profile'));
+    }
   }
 
   switchRole() {

@@ -23,7 +23,9 @@ export class EditProfileComponent {
   constructor() {
     // Listen for custom event to open modal
     // In a real app, a dedicated ModalService would be better
-    window.addEventListener('open-edit-profile', () => this.openModal());
+    if (typeof window !== 'undefined') {
+      window.addEventListener('open-edit-profile', () => this.openModal());
+    }
   }
 
   openModal() {

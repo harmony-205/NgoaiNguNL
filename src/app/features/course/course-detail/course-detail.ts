@@ -55,9 +55,11 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
     const today = new Date();
     this.currentDateFormatted = `Ngày ${today.getDate()} tháng ${today.getMonth() + 1} năm ${today.getFullYear()}`;
 
-    this.ngZone.runOutsideAngular(() => {
-      window.addEventListener('scroll', this.onGlobalScroll, true);
-    });
+    if (typeof window !== 'undefined') {
+      this.ngZone.runOutsideAngular(() => {
+        window.addEventListener('scroll', this.onGlobalScroll, true);
+      });
+    }
 
     this.courseId = this.route.snapshot.paramMap.get('id');
 
@@ -71,7 +73,9 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy() {
-    window.removeEventListener('scroll', this.onGlobalScroll, true);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('scroll', this.onGlobalScroll, true);
+    }
   }
 
   onGlobalScroll = (event: Event) => {
