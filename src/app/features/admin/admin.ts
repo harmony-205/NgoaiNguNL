@@ -1,20 +1,10 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { UserService } from '../../core/services/user.service';
-
-export interface StudentRecord {
-  id: number;
-  fullName: string;
-  email: string;
-  course: string;
-  isInternal: boolean;
-  classTeacherZalo?: string;
-  registeredDate: string;
-  hskAdvanceApproved: boolean; // Duyệt mở khóa HSK 4, 5, 6
-  status: 'active' | 'pending' | 'locked';
-}
+import { StudentManagementService, StudentRecord } from '../../core/services/student-management.service';
+import { CourseMaterialService, CourseMaterial } from '../../core/services/course-material.service';
 
 @Component({
   selector: 'app-admin',
@@ -25,90 +15,22 @@ export interface StudentRecord {
 })
 export class AdminComponent implements OnInit {
   userService = inject(UserService);
+  studentService = inject(StudentManagementService);
+  materialService = inject(CourseMaterialService);
+
   currentTime = '';
-  activeTab: 'internal' | 'external' = 'internal';
+  activeTab: 'internal' | 'external' | 'materials' = 'internal';
   searchQuery = '';
 
-  // Demo stats
-  totalRegisteredUsers = 3900;
-  
-  // Data for students
-  students: StudentRecord[] = [
-    {
-      id: 1,
-      fullName: 'Nguyễn Minh Anh',
-      email: 'minhanh.nguyen@gmail.com',
-      course: 'Tiếng Trung',
-      isInternal: true,
-      classTeacherZalo: 'HSK1 - Cô Hạnh',
-      registeredDate: '2026-10-18',
-      hskAdvanceApproved: true,
-      status: 'active'
-    },
-    {
-      id: 2,
-      fullName: 'Trần Bảo Long',
-      email: 'baolong.tran@outlook.com',
-      course: 'Tiếng Trung',
-      isInternal: true,
-      classTeacherZalo: 'HSK2 - Cô Linh',
-      registeredDate: '2026-10-19',
-      hskAdvanceApproved: false,
-      status: 'pending'
-    },
-    {
-      id: 3,
-      fullName: 'Lê Thu Hà',
-      email: 'thuha.le@gmail.com',
-      course: 'Tiếng Nhật',
-      isInternal: true,
-      classTeacherZalo: 'N5 Cấp tốc - Thầy Tuấn',
-      registeredDate: '2026-10-15',
-      hskAdvanceApproved: false,
-      status: 'active'
-    },
-    {
-      id: 4,
-      fullName: 'Phạm Đức Huy',
-      email: 'duchuy.pham@yahoo.com',
-      course: 'Tiếng Trung',
-      isInternal: true,
-      classTeacherZalo: 'HSK3 Ôn thi - Cô Linh',
-      registeredDate: '2026-10-20',
-      hskAdvanceApproved: true,
-      status: 'active'
-    },
-    {
-      id: 5,
-      fullName: 'Hoàng Yến Nhi',
-      email: 'yennhi.hoang@gmail.com',
-      course: 'Tiếng Trung',
-      isInternal: false,
-      registeredDate: '2026-10-12',
-      hskAdvanceApproved: false,
-      status: 'active'
-    },
-    {
-      id: 6,
-      fullName: 'Vũ Quốc Đạt',
-      email: 'dat.vu@hotmail.com',
-      course: 'Tiếng Trung',
-      isInternal: false,
-      registeredDate: '2026-10-16',
-      hskAdvanceApproved: false,
-      status: 'active'
-    },
-    {
-      id: 7,
-      fullName: 'Đặng Mai Phương',
-      email: 'maiphuong.dang@gmail.com',
-      course: 'Tiếng Nhật',
-      isInternal: false,
-      registeredDate: '2026-10-21',
-      hskAdvanceApproved: false,
-      status: 'active'
-    }
-  ];
+  // Modal thêm tài liệu mới
+  isAddMaterialModalOpen = signal(false);
+  newMaterialTitle = signal('');
+  newMaterialDesc = signal('');
+  newMaterialCategory = signal<'tieng-trung' | 'tieng-nhat' | 'on-tap'>('tieng-trung');
+  newMaterialLevel = signal('hsk4');
+  newMaterialType = signal<'pdf' | 'doc' | 'mp3' | 'zip' | 'drive'>('pdf');
+  newMaterialUrl = signal('');
+  newMaterialSize = signal('');
 
   ngOnInit() {
     const now = new Date();
@@ -117,20 +39,40 @@ export class AdminComponent implements OnInit {
     this.currentTime = `${hours}:${minutes} hôm nay`;
   }
 
-  get internalStudents(): StudentRecord[] {
-    return this.students.filter(s => s.isInternal && this.matchesSearch(s));
-  }
-
-  get externalStudents(): StudentRecord[] {
-    return this.students.filter(s => !s.isInternal && this.matchesSearch(s));
+  get totalRegisteredUsers(): number {
+    return this.studentService.totalCount();
   }
 
   get internalCount(): number {
-    return 1250;
+    return this.studentService.internalCount();
   }
 
   get externalCount(): number {
-    return 2650;
+    return this.studentService.externalCount();
+  }
+
+  get materialsCount(): number {
+    return this.materialService.materials().length;
+  }
+
+  get internalStudents(): StudentRecord[] {
+    return this.studentService.students().filter(s => s.isInternal && this.matchesSearch(s));
+  }
+
+  get externalStudents(): StudentRecord[] {
+    return this.studentService.students().filter(s => !s.isInternal && this.matchesSearch(s));
+  }
+
+  get allMaterials(): CourseMaterial[] {
+    const list = this.materialService.materials();
+    if (!this.searchQuery) return list;
+    const q = this.searchQuery.toLowerCase();
+    return list.filter(m => 
+      m.title.toLowerCase().includes(q) || 
+      m.description.toLowerCase().includes(q) || 
+      m.level.toLowerCase().includes(q) ||
+      m.courseCategory.toLowerCase().includes(q)
+    );
   }
 
   matchesSearch(s: StudentRecord): boolean {
@@ -138,15 +80,15 @@ export class AdminComponent implements OnInit {
     const q = this.searchQuery.toLowerCase();
     return s.fullName.toLowerCase().includes(q) ||
            s.email.toLowerCase().includes(q) ||
-           (s.classTeacherZalo && s.classTeacherZalo.toLowerCase().includes(q)) ||
+           (!!s.classTeacherZalo && s.classTeacherZalo.toLowerCase().includes(q)) ||
            s.course.toLowerCase().includes(q);
   }
 
   toggleHskApproval(student: StudentRecord) {
-    student.hskAdvanceApproved = !student.hskAdvanceApproved;
+    const newStatus = this.studentService.toggleHskApproval(student.id);
     const currentUser = this.userService.currentUser();
     if (currentUser && (currentUser.email === student.email || currentUser.name === student.fullName)) {
-      this.userService.setHskApproval(student.hskAdvanceApproved);
+      this.userService.setHskApproval(newStatus);
     }
   }
 
@@ -176,7 +118,51 @@ export class AdminComponent implements OnInit {
 
   resetPassword(student: StudentRecord) {
     if (confirm(`Đặt lại mật khẩu của học viên "${student.fullName}" về mặc định "123456"?`)) {
-      alert(`Đã đặt lại mật khẩu của ${student.fullName} thành: 123456`);
+      this.studentService.resetPassword(student.id, '123456');
+      alert(`Đã đặt lại mật khẩu của ${student.fullName} thành công: 123456`);
+    }
+  }
+
+  // Quản lý tài liệu học tập
+  openAddMaterialModal() {
+    this.newMaterialTitle.set('');
+    this.newMaterialDesc.set('');
+    this.newMaterialCategory.set('tieng-trung');
+    this.newMaterialLevel.set('hsk4');
+    this.newMaterialType.set('pdf');
+    this.newMaterialUrl.set('');
+    this.newMaterialSize.set('');
+    this.isAddMaterialModalOpen.set(true);
+  }
+
+  closeAddMaterialModal() {
+    this.isAddMaterialModalOpen.set(false);
+  }
+
+  saveNewMaterial() {
+    if (!this.newMaterialTitle() || !this.newMaterialUrl()) {
+      alert('Vui lòng nhập Tên tài liệu và Đường dẫn liên kết tải về!');
+      return;
+    }
+
+    this.materialService.addMaterial({
+      title: this.newMaterialTitle(),
+      description: this.newMaterialDesc(),
+      courseCategory: this.newMaterialCategory(),
+      level: this.newMaterialLevel(),
+      fileType: this.newMaterialType(),
+      fileUrl: this.newMaterialUrl(),
+      fileSize: this.newMaterialSize() || '15 MB',
+      author: 'Cô Nghiêm Linh (Admin)'
+    });
+
+    alert('Đã tải lên tài liệu mới thành công cho học viên!');
+    this.closeAddMaterialModal();
+  }
+
+  deleteMaterial(item: CourseMaterial) {
+    if (confirm(`Bạn có chắc chắn muốn xóa tài liệu "${item.title}"?`)) {
+      this.materialService.deleteMaterial(item.id);
     }
   }
 }

@@ -1,7 +1,10 @@
-import { Component, OnInit, HostListener, NgZone, ChangeDetectorRef, OnDestroy } from '@angular/core';
+import { Component, OnInit, HostListener, NgZone, ChangeDetectorRef, OnDestroy, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../../../core/services/user.service';
+import { UserProgressService } from '../../../core/services/user-progress.service';
+import { CourseMaterialService, CourseMaterial } from '../../../core/services/course-material.service';
 
 export interface Unit {
   id: number;
@@ -10,26 +13,32 @@ export interface Unit {
   completedLessons: number;
 }
 
+export interface LevelConfig {
+  id: string;
+  name: string;
+  theme: string;
+  locked: boolean;
+  unitCount: number;
+  note?: string;
+}
+
 @Component({
   selector: 'app-course-detail',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, FormsModule],
   templateUrl: './course-detail.html',
   styleUrl: './course-detail.scss'
 })
 export class CourseDetailComponent implements OnInit, OnDestroy {
+  userService = inject(UserService);
+  userProgressService = inject(UserProgressService);
+  materialService = inject(CourseMaterialService);
+
+  courseId = 'tieng-trung';
+  courseTitle = 'Khóa tiếng Trung';
   currentHsk = 'hsk1';
-  courseId: string | null = '';
 
-  hskLevels = [
-    { id: 'hsk1', name: 'HSK 1', theme: 'theme-pastel-teal', locked: false },
-    { id: 'hsk2', name: 'HSK 2', theme: 'theme-pastel-blue', locked: false },
-    { id: 'hsk3', name: 'HSK 3', theme: 'theme-pastel-indigo', locked: false },
-    { id: 'hsk4', name: 'HSK 4', theme: 'theme-pastel-purple', locked: true, note: 'Khóa / Sắp ra mắt' },
-    { id: 'hsk5', name: 'HSK 5', theme: 'theme-pastel-amber', locked: true, note: 'Khóa / Sắp ra mắt' },
-    { id: 'hsk6', name: 'HSK 6', theme: 'theme-pastel-rose', locked: true, note: 'Khóa / Sắp ra mắt' }
-  ];
-
+  hskLevels: LevelConfig[] = [];
   units: Unit[] = [];
   activeUnitId: number | null = null;
   activeTheme = 'theme-pastel-teal';
@@ -40,15 +49,22 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
 
   // Stats
   streakDays = 0;
-  monthStudyDays = '0/31 ngày';
+  monthStudyDays = '0/30 ngày';
   currentDateFormatted = '';
+
+  // Materials & Upload Modal
+  isUploadModalOpen = signal(false);
+  newMatTitle = signal('');
+  newMatDesc = signal('');
+  newMatType = signal<'pdf' | 'doc' | 'mp3' | 'zip' | 'drive'>('pdf');
+  newMatUrl = signal('');
+  newMatSize = signal('');
 
   constructor(
     private route: ActivatedRoute,
     private router: Router,
     private ngZone: NgZone,
-    private cdr: ChangeDetectorRef,
-    public userService: UserService
+    private cdr: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
@@ -61,15 +77,51 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
       });
     }
 
-    this.courseId = this.route.snapshot.paramMap.get('id');
+    this.route.paramMap.subscribe(params => {
+      const id = params.get('id') || 'tieng-trung';
+      this.courseId = id;
+      this.setupCourseLevels(id);
+    });
 
     this.route.queryParams.subscribe(params => {
-      if (params['sublevel']) {
-        this.selectHsk(params['sublevel']);
-      } else {
-        this.selectHsk('hsk1');
+      const sublevel = params['sublevel'];
+      if (sublevel) {
+        this.selectHsk(sublevel);
+      } else if (this.hskLevels.length > 0) {
+        this.selectHsk(this.hskLevels[0].id);
       }
     });
+  }
+
+  setupCourseLevels(courseId: string) {
+    if (courseId === 'tieng-nhat') {
+      this.courseTitle = 'Khóa tiếng Nhật';
+      this.hskLevels = [
+        { id: 'n5', name: 'JLPT N5', theme: 'theme-pastel-teal', locked: false, unitCount: 25 },
+        { id: 'n4', name: 'JLPT N4', theme: 'theme-pastel-blue', locked: false, unitCount: 25 },
+        { id: 'n3', name: 'JLPT N3', theme: 'theme-pastel-indigo', locked: false, unitCount: 20 },
+        { id: 'n2', name: 'JLPT N2', theme: 'theme-pastel-purple', locked: true, unitCount: 20 },
+        { id: 'n1', name: 'JLPT N1', theme: 'theme-pastel-rose', locked: true, unitCount: 20 }
+      ];
+    } else if (courseId === 'on-tap') {
+      this.courseTitle = 'Khóa Ôn tập & Luyện thi';
+      this.hskLevels = [
+        { id: 'on-thi', name: 'Ôn thi CSCA (Toán-Lý)', theme: 'theme-pastel-amber', locked: false, unitCount: 15 },
+        { id: 'hskk', name: 'Luyện thi HSKK', theme: 'theme-pastel-teal', locked: false, unitCount: 15 },
+        { id: 'hoc-bong', name: 'Chinh phục Học bổng TQ', theme: 'theme-pastel-rose', locked: false, unitCount: 12 }
+      ];
+    } else {
+      // Default: tieng-trung
+      this.courseTitle = 'Khóa tiếng Trung';
+      this.hskLevels = [
+        { id: 'hsk1', name: 'HSK 1', theme: 'theme-pastel-teal', locked: false, unitCount: 15 },
+        { id: 'hsk2', name: 'HSK 2', theme: 'theme-pastel-blue', locked: false, unitCount: 15 },
+        { id: 'hsk3', name: 'HSK 3', theme: 'theme-pastel-indigo', locked: false, unitCount: 18 },
+        { id: 'hsk4', name: 'HSK 4', theme: 'theme-pastel-purple', locked: true, unitCount: 20 },
+        { id: 'hsk5', name: 'HSK 5', theme: 'theme-pastel-amber', locked: true, unitCount: 36 },
+        { id: 'hsk6', name: 'HSK 6', theme: 'theme-pastel-rose', locked: true, unitCount: 40 }
+      ];
+    }
   }
 
   ngOnDestroy() {
@@ -88,7 +140,13 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
   }
 
   isLevelLocked(levelId: string): boolean {
-    if (['hsk1', 'hsk2', 'hsk3'].includes(levelId)) return false;
+    // 1. Teachers/Admins always have FULL ACCESS to all levels!
+    if (this.userService.isTeacher()) return false;
+
+    // 2. Sơ cấp levels are open to everyone
+    if (['hsk1', 'hsk2', 'hsk3', 'n5', 'on-thi', 'hskk', 'hoc-bong'].includes(levelId)) return false;
+
+    // 3. Advanced levels check if student has approval from admin
     return !this.userService.hasHskAdvanceAccess();
   }
 
@@ -105,28 +163,27 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
     this.currentHsk = hskId;
     this.activeTheme = level.theme;
     this.activeUnitId = null;
-    this.generateUnits(hskId);
+    this.generateUnits(hskId, level.unitCount);
   }
 
   closeLockedModal() {
     this.isLockedModalOpen = false;
   }
 
-  generateUnits(hskId: string) {
-    // 15 units for HSK1 and HSK2, 18 for HSK3
-    const count = (hskId === 'hsk1' || hskId === 'hsk2') ? 15 : 18;
+  generateUnits(hskId: string, count: number) {
+    const user = this.userService.currentUser();
+    const userEmail = user?.email || 'guest';
+
     this.units = Array.from({ length: count }, (_, i) => {
-      let completed = 0;
-      if (hskId === 'hsk1') {
-        if (i === 0) completed = 12; // Completed
-        else if (i === 1) completed = 5; // In progress
-        else completed = 0; // Not started
-      }
+      const unitId = i + 1;
+      // Authentic progress per user: newly registered user starts at 0!
+      const progress = this.userProgressService.getUnitProgress(userEmail, hskId, unitId);
+
       return {
-        id: i + 1,
-        title: `Bài ${i + 1}`,
-        totalLessons: 12,
-        completedLessons: completed
+        id: unitId,
+        title: `Bài ${unitId}`,
+        totalLessons: progress.totalLessons || 12,
+        completedLessons: progress.completedLessons || 0
       };
     });
   }
@@ -153,12 +210,77 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
 
   startUnit(event: Event, unit: Unit) {
     event.stopPropagation();
-    this.router.navigate(['/lesson', `${this.currentHsk}-${unit.id}`], {
-      queryParams: {
-        theme: this.activeTheme,
-        level: this.currentHsk,
-        unit: unit.id
+    // For HSK 1, 2, 3, navigate to interactive lesson
+    if (['hsk1', 'hsk2', 'hsk3'].includes(this.currentHsk)) {
+      this.router.navigate(['/lesson', `${this.currentHsk}-${unit.id}`], {
+        queryParams: {
+          theme: this.activeTheme,
+          level: this.currentHsk,
+          unit: unit.id
+        }
+      });
+    } else {
+      // For higher levels or other courses, scroll to or open study materials
+      const element = document.getElementById('materials-section');
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
       }
+    }
+  }
+
+  get materialsForCurrentLevel(): CourseMaterial[] {
+    const category = (this.courseId === 'tieng-nhat' || this.courseId === 'on-tap') ? this.courseId : 'tieng-trung';
+    return this.materialService.getMaterials(category, this.currentHsk);
+  }
+
+  openUploadModal() {
+    this.newMatTitle.set('');
+    this.newMatDesc.set('');
+    this.newMatType.set('pdf');
+    this.newMatUrl.set('');
+    this.newMatSize.set('');
+    this.isUploadModalOpen.set(true);
+  }
+
+  closeUploadModal() {
+    this.isUploadModalOpen.set(false);
+  }
+
+  saveUploadedMaterial() {
+    if (!this.newMatTitle() || !this.newMatUrl()) {
+      alert('Vui lòng nhập tên tài liệu và đường dẫn liên kết tải về!');
+      return;
+    }
+
+    const category = (this.courseId === 'tieng-nhat' || this.courseId === 'on-tap') 
+      ? (this.courseId as 'tieng-nhat' | 'on-tap')
+      : 'tieng-trung';
+
+    this.materialService.addMaterial({
+      title: this.newMatTitle(),
+      description: this.newMatDesc(),
+      courseCategory: category,
+      level: this.currentHsk,
+      fileType: this.newMatType(),
+      fileUrl: this.newMatUrl(),
+      fileSize: this.newMatSize() || '15 MB',
+      author: 'Cô Nghiêm Linh (Admin)'
     });
+
+    alert(`Đã tải lên tài liệu mới cho cấp độ ${this.currentHsk.toUpperCase()} thành công!`);
+    this.closeUploadModal();
+  }
+
+  downloadMaterial(mat: CourseMaterial) {
+    this.materialService.incrementDownload(mat.id);
+    if (typeof window !== 'undefined') {
+      window.open(mat.fileUrl, '_blank');
+    }
+  }
+
+  deleteMaterial(mat: CourseMaterial) {
+    if (confirm(`Bạn có chắc chắn muốn xóa tài liệu "${mat.title}"?`)) {
+      this.materialService.deleteMaterial(mat.id);
+    }
   }
 }

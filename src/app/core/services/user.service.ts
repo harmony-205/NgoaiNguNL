@@ -1,18 +1,23 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { StudentManagementService } from './student-management.service';
 
 export interface User {
   id: string;
   name: string;
-  email?: string;
+  email: string;
   role: 'teacher' | 'student';
   avatarUrl: string;
   hskAdvanceApproved?: boolean;
+  isGoogleAuth?: boolean;
+  password?: string;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class UserService {
+  private studentService = inject(StudentManagementService);
+
   // Use Angular Signals for reactive state
   currentUser = signal<User | null>(null);
 
@@ -40,35 +45,65 @@ export class UserService {
     this.loginAs('student');
   }
 
-  loginAs(role: 'teacher' | 'student', customName?: string, email?: string) {
+  loginAs(
+    role: 'teacher' | 'student',
+    customName?: string,
+    email?: string,
+    isGoogleAuth = false,
+    password?: string
+  ) {
     let defaultAvatar = '';
     
     if (role === 'teacher') {
-      defaultAvatar = 'assets/logo.jpg';
+      defaultAvatar = 'assets/logo-nghiem-linh.jpg';
     } else {
       const randomNum = Math.floor(Math.random() * 12) + 1;
       defaultAvatar = `assets/free_avatar/free_avatar_${randomNum}.png`;
     }
 
-    const mockUser: User = {
-      id: 'usr_' + Math.random().toString(36).substr(2, 9),
-      name: customName || (role === 'teacher' ? 'Cô Nghiêm Linh' : 'Học viên Demo'),
-      email: email || (role === 'teacher' ? 'admin@nghiemlinh.edu.vn' : 'hocvien@nghiemlinh.edu.vn'),
+    const assignedEmail = email || (role === 'teacher' ? 'admin@nghiemlinh.edu.vn' : 'student@nghiemlinh.edu.vn');
+    const assignedName = customName || (role === 'teacher' ? 'Cô Nghiêm Linh (Admin)' : 'Học viên');
+
+    // Check if student record exists in studentService
+    let hskApproved = role === 'teacher';
+    let storedPassword = password || 'Password123';
+
+    if (role === 'student') {
+      const existing = this.studentService.findByEmail(assignedEmail);
+      if (existing) {
+        hskApproved = existing.hskAdvanceApproved;
+        if (existing.password) storedPassword = existing.password;
+        if (existing.avatarUrl) defaultAvatar = existing.avatarUrl;
+      }
+    }
+
+    const user: User = {
+      id: 'usr_' + Math.random().toString(36).substring(2, 9),
+      name: assignedName,
+      email: assignedEmail,
       role: role,
       avatarUrl: defaultAvatar,
-      hskAdvanceApproved: role === 'teacher' // Teachers always have access
+      hskAdvanceApproved: hskApproved,
+      isGoogleAuth: isGoogleAuth,
+      password: storedPassword
     };
 
-    this.setCurrentUser(mockUser);
+    this.setCurrentUser(user);
   }
 
+  // Security: only allow switching role if currently teacher/admin
   switchRole() {
     const current = this.currentUser();
-    if (!current || current.role === 'student') {
-      this.loginAs('teacher');
-    } else {
-      this.loginAs('student');
+    if (!current) return;
+    
+    // Students cannot switch role!
+    if (current.role === 'student') {
+      console.warn('Học viên không có quyền chuyển sang vai trò Giáo viên.');
+      return;
     }
+
+    // Teacher can toggle to preview student view
+    this.loginAs('student', 'Giáo viên (Chế độ xem Học viên)', current.email);
   }
 
   setHskApproval(approved: boolean) {
@@ -99,12 +134,55 @@ export class UserService {
   updateProfile(name: string, avatarUrl: string) {
     const user = this.currentUser();
     if (user) {
-      this.setCurrentUser({
+      const updatedUser: User = {
         ...user,
         name: name,
         avatarUrl: avatarUrl
-      });
+      };
+      this.setCurrentUser(updatedUser);
+
+      // Also sync with StudentManagementService
+      const student = this.studentService.findByEmail(user.email);
+      if (student) {
+        this.studentService.updateStudent(student.id, {
+          fullName: name,
+          avatarUrl: avatarUrl
+        });
+      }
     }
   }
-}
 
+  changePassword(currentPass: string, newPass: string): { success: boolean; message: string } {
+    const user = this.currentUser();
+    if (!user) {
+      return { success: false, message: 'Vui lòng đăng nhập để thực hiện.' };
+    }
+
+    if (user.isGoogleAuth) {
+      return { success: false, message: 'Tài khoản đăng nhập qua Google không thể đổi mật khẩu tại đây.' };
+    }
+
+    if (user.password && user.password !== currentPass) {
+      return { success: false, message: 'Mật khẩu hiện tại không đúng.' };
+    }
+
+    if (!newPass || newPass.length < 6) {
+      return { success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự.' };
+    }
+
+    // Update current user
+    const updatedUser: User = {
+      ...user,
+      password: newPass
+    };
+    this.setCurrentUser(updatedUser);
+
+    // Update in student roster
+    const student = this.studentService.findByEmail(user.email);
+    if (student) {
+      this.studentService.resetPassword(student.id, newPass);
+    }
+
+    return { success: true, message: 'Đổi mật khẩu thành công!' };
+  }
+}

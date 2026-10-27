@@ -1,14 +1,25 @@
 <div class="modal-overlay" *ngIf="isVisible()" (click)="closeModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
     <div class="modal-header">
-      <h2>Chỉnh sửa thông tin</h2>
+      <h2>Chỉnh sửa thông tin tài khoản</h2>
       <button class="btn-close" (click)="closeModal()">✕</button>
     </div>
 
     <div class="modal-body">
+      <!-- Email (Readonly) -->
+      <div class="form-group">
+        <label>Email tài khoản</label>
+        <div class="email-display" style="padding: 10px 14px; background: #f1f5f9; border-radius: 8px; font-size: 14px; color: #475569; display: flex; align-items: center; justify-content: space-between;">
+          <span>{{ userEmail() }}</span>
+          <span *ngIf="isGoogleAccount()" style="font-size: 11px; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">
+            Liên kết Google
+          </span>
+        </div>
+      </div>
+
       <!-- Tên hiển thị -->
       <div class="form-group">
-        <label>Tên học viên</label>
+        <label>Họ và tên hiển thị</label>
         <input type="text" [ngModel]="editName()" (ngModelChange)="editName.set($event)"
           placeholder="Nhập tên của bạn" />
       </div>
@@ -21,6 +32,49 @@
             [class.selected]="selectedAvatar() === avatar" (click)="selectAvatar(avatar)">
             <img [src]="avatar" alt="Avatar option">
             <div class="check-icon" *ngIf="selectedAvatar() === avatar">✓</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Đổi mật khẩu Section -->
+      <div class="password-accordion" style="margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+        <div class="password-toggle" (click)="togglePasswordSection()" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
+          <div style="font-weight: 600; color: #1e293b; font-size: 14px; display: flex; align-items: center; gap: 6px;">
+            <span>🔑</span>
+            <span>Đổi mật khẩu</span>
+          </div>
+          <span style="font-size: 12px; color: #64748b;">{{ showPasswordSection() ? '▲ Thu gọn' : '▼ Mở rộng' }}</span>
+        </div>
+
+        <div *ngIf="showPasswordSection()" style="margin-top: 14px;">
+          <!-- If registered with Google -->
+          <div *ngIf="isGoogleAccount()" style="padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; color: #166534; font-size: 13px;">
+            ℹ️ Tài khoản của bạn được liên kết qua Google. Bạn có thể đăng nhập bảo mật trực tiếp bằng nút Google mà không cần mật khẩu.
+          </div>
+
+          <!-- If regular account -->
+          <div *ngIf="!isGoogleAccount()" style="display: flex; flex-direction: column; gap: 12px;">
+            <div *ngIf="passwordError()" style="padding: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 8px; font-size: 13px;">
+              ⚠️ {{ passwordError() }}
+            </div>
+            
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px;">Mật khẩu hiện tại</label>
+              <input type="password" [ngModel]="currentPassword()" (ngModelChange)="currentPassword.set($event)"
+                placeholder="Nhập mật khẩu hiện tại" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px;">Mật khẩu mới (tối thiểu 6 ký tự)</label>
+              <input type="password" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
+                placeholder="Nhập mật khẩu mới" />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 0;">
+              <label style="font-size: 13px;">Xác nhận mật khẩu mới</label>
+              <input type="password" [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)"
+                placeholder="Nhập lại mật khẩu mới" />
+            </div>
           </div>
         </div>
       </div>

@@ -50,18 +50,34 @@
                             <li>
                                 <div class="level-title">🚀 Khóa trung-cao cấp</div>
                                 <ul class="hsk-list">
-                                    <li><a class="disabled">HSK 4 (Sắp ra mắt)</a></li>
-                                    <li><a class="disabled">HSK 5 (Sắp ra mắt)</a></li>
-                                    <li><a class="disabled">HSK 6 (Sắp ra mắt)</a></li>
+                                    <li><a routerLink="/course/tieng-trung"
+                                            [queryParams]="{level: 'trung-cao-cap', sublevel: 'hsk4'}" (click)="toggleMenu()"
+                                            class="hsk4">HSK 4</a></li>
+                                    <li><a routerLink="/course/tieng-trung"
+                                            [queryParams]="{level: 'trung-cao-cap', sublevel: 'hsk5'}" (click)="toggleMenu()"
+                                            class="hsk5">HSK 5</a></li>
+                                    <li><a routerLink="/course/tieng-trung"
+                                            [queryParams]="{level: 'trung-cao-cap', sublevel: 'hsk6'}" (click)="toggleMenu()"
+                                            class="hsk6">HSK 6</a></li>
                                 </ul>
                             </li>
                         </ul>
                     </li>
-                    <li class="course-item disabled">
-                        <div class="course-title">🇯🇵 Khóa tiếng Nhật (Sắp ra mắt)</div>
+                    <li class="course-item">
+                        <div class="course-title">
+                            <a routerLink="/course/tieng-nhat" (click)="toggleMenu()" style="color: inherit; text-decoration: none; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <span>🇯🇵 Khóa tiếng Nhật</span>
+                                <span style="font-size: 10px; background: #e0f2fe; color: #0284c7; padding: 2px 6px; border-radius: 4px; font-weight: normal;">N5 - N3</span>
+                            </a>
+                        </div>
                     </li>
-                    <li class="course-item disabled">
-                        <div class="course-title">📝 Khóa ôn tập (Sắp ra mắt)</div>
+                    <li class="course-item">
+                        <div class="course-title">
+                            <a routerLink="/course/on-tap" (click)="toggleMenu()" style="color: inherit; text-decoration: none; display: flex; align-items: center; justify-content: space-between; width: 100%;">
+                                <span>📝 Khóa ôn tập & Đề thi</span>
+                                <span style="font-size: 10px; background: #fef3c7; color: #d97706; padding: 2px 6px; border-radius: 4px; font-weight: normal;">CSCA & HSKK</span>
+                            </a>
+                        </div>
                     </li>
                 </ul>
             </div>
@@ -97,8 +113,8 @@
                             <li (click)="openEditProfile()">
                                 <span class="icon">✏️</span> Chỉnh sửa thông tin
                             </li>
-                            <li (click)="switchRole()">
-                                <span class="icon">🔄</span> Đổi vai trò ({{ userService.isTeacher() ? 'Sang Học viên' : 'Sang Giáo viên' }})
+                            <li *ngIf="userService.isTeacher()" (click)="switchRole()">
+                                <span class="icon">👁️</span> Xem giao diện học viên
                             </li>
                             <li class="logout" (click)="logout()">
                                 <span class="icon">🚪</span> Đăng xuất

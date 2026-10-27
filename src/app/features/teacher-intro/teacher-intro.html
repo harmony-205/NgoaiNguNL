@@ -1,21 +1,33 @@
 <div class="teacher-page-container">
+
+  <!-- Admin Edit Floating Banner -->
+  <div *ngIf="isTeacher()" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 12px 18px; background: #f0f9ff; border: 1px solid #bae6fd; border-radius: 12px;">
+    <div style="display: flex; align-items: center; gap: 8px; font-size: 14px; color: #0369a1; font-weight: 600;">
+      <span>🛡️ Chế độ Admin:</span>
+      <span>Bạn có quyền chỉnh sửa toàn bộ hồ sơ, thông tin liên hệ và thành tích giảng viên.</span>
+    </div>
+    <button (click)="openEditModal()" style="display: inline-flex; align-items: center; gap: 6px; padding: 8px 16px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(2,132,199,0.25);">
+      <span>✏️ Chỉnh sửa thông tin</span>
+    </button>
+  </div>
+
   <!-- Profile Hero Header -->
   <div class="teacher-hero-card">
     <div class="avatar-wrapper">
-      <img src="assets/nghiem-linh-3-crop.png" alt="Cô Nghiêm Linh" class="teacher-avatar" onerror="this.src='assets/logo-nghiem-linh.jpg'" />
+      <img [src]="profile().avatarUrl" alt="Cô Nghiêm Linh" class="teacher-avatar" onerror="this.src='assets/logo-nghiem-linh.jpg'" />
       <span class="badge-verified">✓</span>
     </div>
-    <h1 class="teacher-name">Cô Nghiêm Linh</h1>
+    <h1 class="teacher-name">{{ profile().name }}</h1>
     <p class="teacher-tagline">
-      10 năm kinh nghiệm học tiếng Nhật và hơn 6 năm kinh nghiệm học tiếng Trung
+      {{ profile().tagline }}
     </p>
 
     <div class="quick-contact-pills">
-      <a href="https://zalo.me/0385780185" target="_blank" class="pill-btn zalo-btn">
-        <span>💬 Zalo: 0385780185</span>
+      <a [href]="'https://zalo.me/' + profile().zalo" target="_blank" class="pill-btn zalo-btn">
+        <span>💬 Zalo: {{ profile().zalo }}</span>
       </a>
-      <a href="https://www.facebook.com/share/1EwT9r5Gte/?mibextid=wwXIfr" target="_blank" class="pill-btn fb-btn">
-        <span>👤 Facebook: Nghiêm Linh</span>
+      <a [href]="profile().facebookUrl" target="_blank" class="pill-btn fb-btn">
+        <span>👤 Facebook: {{ profile().facebookName }}</span>
       </a>
     </div>
   </div>
@@ -27,7 +39,7 @@
       <h2>LIÊN HỆ & CỘNG ĐỒNG</h2>
     </div>
     <div class="social-links-grid">
-      <a *ngFor="let item of socialLinks" [href]="item.link" target="_blank" class="social-card">
+      <a *ngFor="let item of profile().socialLinks" [href]="item.link" target="_blank" class="social-card">
         <div class="social-icon" [style.background-color]="item.color + '15'" [style.color]="item.color">
           {{ item.icon }}
         </div>
@@ -47,7 +59,7 @@
       <h2>Kinh nghiệm giảng dạy</h2>
     </div>
     <div class="stats-grid">
-      <div *ngFor="let stat of stats" class="stat-card">
+      <div *ngFor="let stat of profile().stats" class="stat-card">
         <div class="stat-icon">{{ stat.icon }}</div>
         <div class="stat-number">{{ stat.number }}</div>
         <div class="stat-label">{{ stat.label }}</div>
@@ -57,7 +69,7 @@
     <div class="teaching-activities-box" style="margin-top: 20px; padding: 16px; background: #f8fafc; border-radius: 12px; border-left: 4px solid #3b82f6;">
       <h4 style="font-weight: 600; color: #1e293b; margin-bottom: 8px;">Hoạt động liên quan đến giảng dạy:</h4>
       <ul style="list-style-type: disc; padding-left: 20px; color: #475569; display: flex; flex-direction: column; gap: 6px; font-size: 14px;">
-        <li *ngFor="let act of teachingActivities">{{ act }}</li>
+        <li *ngFor="let act of profile().teachingActivities">{{ act }}</li>
       </ul>
     </div>
   </div>
@@ -69,7 +81,7 @@
       <h2>Học vấn & Học bổng</h2>
     </div>
     <div class="education-timeline">
-      <div *ngFor="let edu of educations" class="edu-card">
+      <div *ngFor="let edu of profile().educations" class="edu-card">
         <div class="edu-badge">🎓</div>
         <div class="edu-body">
           <h3>{{ edu.school }}</h3>
@@ -102,49 +114,123 @@
     </div>
   </div>
 
-  <!-- Certificates & Awards -->
-  <div class="two-column-section">
-    <!-- Certificates -->
-    <div class="section-card half-card">
-      <div class="section-title-row">
-        <span class="icon">🏅</span>
-        <h2>Chứng chỉ ngoại ngữ</h2>
-      </div>
-      <div class="cert-list">
-        <div *ngFor="let cert of certificates" class="cert-card">
-          <div class="cert-icon">📜</div>
-          <div>
-            <h4>{{ cert.title }}</h4>
-            <p>{{ cert.desc }}</p>
-          </div>
-        </div>
-      </div>
+  <!-- Certificates (image 7) -->
+  <div class="section-card">
+    <div class="section-title-row">
+      <span class="icon">📜</span>
+      <h2>Chứng chỉ & Năng lực ngôn ngữ</h2>
     </div>
-
-    <!-- Awards & Media -->
-    <div class="section-card half-card">
-      <div class="section-title-row">
-        <span class="icon">✨</span>
-        <h2>Giải thưởng & Hoạt động</h2>
-      </div>
-      <div class="awards-list">
-        <div *ngFor="let award of awards" class="award-item">
-          <span class="bullet-star">⭐</span>
-          <p>{{ award }}</p>
-        </div>
+    <div class="cert-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px;">
+      <div *ngFor="let cert of profile().certificates" class="cert-box" style="padding: 16px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 12px;">
+        <h4 style="color: #9a3412; font-weight: 700; margin-bottom: 6px;">{{ cert.title }}</h4>
+        <p style="color: #7c2d12; font-size: 14px; margin: 0;">{{ cert.desc }}</p>
       </div>
     </div>
   </div>
 
-  <!-- Bottom CTA -->
-  <div class="bottom-cta-banner">
-    <div class="cta-text">
-      <h3>Sẵn sàng chinh phục tiếng Trung cùng Ngoại Ngữ Nghiêm Linh?</h3>
-      <p>Lộ trình bài bản, cá nhân hóa theo từng mục tiêu học viên.</p>
+  <!-- Awards & Media (image 8) -->
+  <div class="section-card">
+    <div class="section-title-row">
+      <span class="icon">🏆</span>
+      <h2>Giải thưởng & Hoạt động Truyền thông</h2>
     </div>
-    <div class="cta-actions">
-      <a routerLink="/course/tieng-trung" class="btn-start-course">Bắt đầu học ngay</a>
-      <a href="https://zalo.me/0385780185" target="_blank" class="btn-chat-zalo">Nhắn Zalo tư vấn</a>
+    <ul class="awards-list" style="list-style-type: disc; padding-left: 20px; color: #334155; display: flex; flex-direction: column; gap: 8px; font-size: 14px;">
+      <li *ngFor="let award of profile().awards">{{ award }}</li>
+    </ul>
+  </div>
+
+</div>
+
+<!-- Admin Edit Teacher Modal -->
+<div class="modal-overlay" *ngIf="isEditModalOpen()" (click)="closeEditModal()" style="position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 9999;">
+  <div class="modal-content" (click)="$event.stopPropagation()" style="background: white; border-radius: 16px; width: 100%; max-width: 650px; max-height: 90vh; overflow-y: auto; padding: 24px; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1);">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #e2e8f0; padding-bottom: 12px; margin-bottom: 16px;">
+      <h3 style="margin: 0; font-size: 18px; font-weight: 700; color: #1e293b;">✏️ Chỉnh sửa thông tin Giảng viên</h3>
+      <button (click)="closeEditModal()" style="background: none; border: none; font-size: 18px; cursor: pointer; color: #64748b;">✕</button>
     </div>
+
+    <div style="display: flex; flex-direction: column; gap: 16px;">
+      <!-- Tên và Tagline -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Tên giảng viên</label>
+          <input type="text" [ngModel]="editName()" (ngModelChange)="editName.set($event)" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Số điện thoại Zalo</label>
+          <input type="text" [ngModel]="editZalo()" (ngModelChange)="editZalo.set($event)" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+        </div>
+      </div>
+
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Khẩu hiệu / Giới thiệu ngắn</label>
+        <textarea rows="2" [ngModel]="editTagline()" (ngModelChange)="editTagline.set($event)" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;"></textarea>
+      </div>
+
+      <!-- Facebook -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Tên Facebook hiển thị</label>
+          <input type="text" [ngModel]="editFacebookName()" (ngModelChange)="editFacebookName.set($event)" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Link Facebook cá nhân</label>
+          <input type="text" [ngModel]="editFacebookUrl()" (ngModelChange)="editFacebookUrl.set($event)" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+        </div>
+      </div>
+
+      <!-- Stats Grid Editing -->
+      <div style="background: #f8fafc; padding: 12px; border-radius: 10px; border: 1px solid #e2e8f0;">
+        <h4 style="margin: 0 0 10px 0; font-size: 13px; font-weight: 700; color: #1e293b;">📊 Số liệu thống kê:</h4>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+          <div>
+            <label style="display: block; font-size: 12px; color: #64748b;">Số năm kinh nghiệm</label>
+            <input type="text" [ngModel]="editStatExp()" (ngModelChange)="editStatExp.set($event)" placeholder="4 năm" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; color: #64748b;">Số lớp giảng dạy</label>
+            <input type="text" [ngModel]="editStatClasses()" (ngModelChange)="editStatClasses.set($event)" placeholder="50+" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; color: #64748b;">Số học viên đạt HSK2-5</label>
+            <input type="text" [ngModel]="editStatStudents()" (ngModelChange)="editStatStudents.set($event)" placeholder="200+" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 12px; color: #64748b;">Học viên đỗ học bổng/CSCA</label>
+            <input type="text" [ngModel]="editStatScholarships()" (ngModelChange)="editStatScholarships.set($event)" placeholder="60+" style="width: 100%; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px;" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Hoạt động giảng dạy -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Hoạt động liên quan đến giảng dạy (mỗi dòng 1 ý)</label>
+        <textarea rows="4" [ngModel]="editActivitiesText()" (ngModelChange)="editActivitiesText.set($event)" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;"></textarea>
+      </div>
+
+      <!-- Giải thưởng & Truyền thông -->
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 600; color: #334155; margin-bottom: 4px;">Giải thưởng & Hoạt động Truyền thông (mỗi dòng 1 ý)</label>
+        <textarea rows="3" [ngModel]="editAwardsText()" (ngModelChange)="editAwardsText.set($event)" style="width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 13px;"></textarea>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+      <button (click)="resetDefault()" style="padding: 8px 14px; background: #fff1f2; color: #e11d48; border: 1px solid #fecdd3; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer;">
+        Khôi phục mặc định
+      </button>
+
+      <div style="display: flex; gap: 10px;">
+        <button (click)="closeEditModal()" style="padding: 9px 18px; border: 1px solid #cbd5e1; background: white; border-radius: 8px; font-weight: 600; color: #475569; cursor: pointer;">
+          Hủy
+        </button>
+        <button (click)="saveProfile()" style="padding: 9px 18px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">
+          Lưu thông tin
+        </button>
+      </div>
+    </div>
+
   </div>
 </div>
