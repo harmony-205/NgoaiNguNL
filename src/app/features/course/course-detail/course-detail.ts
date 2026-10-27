@@ -153,7 +153,12 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
 
   startUnit(event: Event, unit: Unit) {
     event.stopPropagation();
-    console.log(`Starting unit ${unit.id}`);
-    this.router.navigate(['/lesson', unit.id], { queryParams: { theme: this.activeTheme } });
+    this.router.navigate(['/lesson', `${this.currentHsk}-${unit.id}`], {
+      queryParams: {
+        theme: this.activeTheme,
+        level: this.currentHsk,
+        unit: unit.id
+      }
+    });
   }
 }

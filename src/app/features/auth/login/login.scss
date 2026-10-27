@@ -30,6 +30,16 @@
   text-align: center;
   margin-bottom: 30px;
 
+  .auth-logo-img {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 12px;
+    display: block;
+    box-shadow: 0 4px 12px rgba(237, 186, 32, 0.25);
+  }
+
   h2 {
     margin: 0;
     color: #EDBA20;
@@ -37,11 +47,19 @@
     font-weight: 800;
   }
 
-  p {
+  .auth-slogan {
     margin: 5px 0 0;
     color: #D4A315;
     font-size: 14px;
     font-style: italic;
+    font-weight: 600;
+  }
+
+  .auth-sub-slogan {
+    margin: 4px 0 0;
+    color: #a07e10;
+    font-size: 12.5px;
+    font-weight: 700;
   }
 }
 

@@ -60,6 +60,7 @@ export class Lesson implements OnInit, OnDestroy {
   selectedLessonIdToNavigate: string | null = null;
   dropdownLeft: number = 0;
   dropdownTop: number = 0;
+  currentLevelKey: string = 'hsk1';
   currentUnitId: string = '1';
 
   constructor(
@@ -76,30 +77,70 @@ export class Lesson implements OnInit, OnDestroy {
       });
     }
 
+    // Subscribe route queryParams
+    this.route.queryParams.subscribe(params => {
+      if (params['theme']) {
+        this.themeClass = params['theme'];
+      }
+      if (params['level']) {
+        this.currentLevelKey = params['level'];
+      }
+      this.updateLevelAndLessonName();
+    });
+
     // Lấy id từ route params, subscribe để tự update khi navigate cùng trang
     this.route.paramMap.subscribe(params => {
-      this.currentUnitId = params.get('id') || '1';
+      const rawId = params.get('id') || '1';
+      let level = this.currentLevelKey || 'hsk1';
+      let unitNum = '1';
+
+      if (rawId.startsWith('hsk')) {
+        const parts = rawId.split('-');
+        level = parts[0];
+        unitNum = parts[1] || '1';
+      } else {
+        unitNum = rawId;
+        const qLevel = this.route.snapshot.queryParamMap.get('level');
+        if (qLevel) {
+          level = qLevel;
+        } else if (this.themeClass.includes('teal')) {
+          level = 'hsk1';
+        } else if (this.themeClass.includes('blue')) {
+          level = 'hsk2';
+        } else if (this.themeClass.includes('indigo')) {
+          level = 'hsk3';
+        }
+      }
+
+      this.currentLevelKey = level;
+      this.currentUnitId = unitNum;
+
+      if (level === 'hsk1') {
+        this.hskLevelName = 'HSK 1';
+        this.themeClass = 'theme-pastel-teal';
+        this.availableLessons = Array.from({ length: 15 }, (_, i) => i + 1);
+      } else if (level === 'hsk2') {
+        this.hskLevelName = 'HSK 2';
+        this.themeClass = 'theme-pastel-blue';
+        this.availableLessons = Array.from({ length: 15 }, (_, i) => i + 1);
+      } else if (level === 'hsk3') {
+        this.hskLevelName = 'HSK 3';
+        this.themeClass = 'theme-pastel-indigo';
+        this.availableLessons = Array.from({ length: 18 }, (_, i) => i + 1);
+      }
+
       this.unitName = `Bài ${this.currentUnitId}`;
       this.updateLevelAndLessonName();
 
-      this.lessonData = LessonRegistry[this.currentUnitId] || LessonRegistry['1'];
+      const lookupKey = `${level}-${unitNum}`;
+      this.lessonData = LessonRegistry[lookupKey] || LessonRegistry[unitNum] || LessonRegistry['hsk1-1'] || LessonRegistry['1'];
 
-      // Reset lại trạng thái bài học (mock) khi chuyển bài
+      // Reset lại trạng thái bài học khi chuyển bài
       if (this.modules.length > 0) {
         this.modules.forEach(m => m.isActive = false);
         this.modules[0].isActive = true;
         this.activeModuleId = this.modules[0].id;
       }
-    });
-
-    this.route.queryParams.subscribe(params => {
-      if (params['theme']) {
-        this.themeClass = params['theme'];
-        if (this.themeClass.includes('teal')) this.hskLevelName = 'HSK 1';
-        else if (this.themeClass.includes('blue')) this.hskLevelName = 'HSK 2';
-        else if (this.themeClass.includes('indigo')) this.hskLevelName = 'HSK 3';
-      }
-      this.updateLevelAndLessonName();
     });
 
     this.modules = [
@@ -170,8 +211,8 @@ export class Lesson implements OnInit, OnDestroy {
       setTimeout(() => {
         if (doNavigate) {
           this.ngZone.run(() => {
-            this.router.navigate(['/lesson', this.selectedLessonIdToNavigate], {
-              queryParams: { theme: this.themeClass }
+            this.router.navigate(['/lesson', `${this.currentLevelKey}-${this.selectedLessonIdToNavigate}`], {
+              queryParams: { theme: this.themeClass, level: this.currentLevelKey }
             });
             this.closeLessonSelector();
           });

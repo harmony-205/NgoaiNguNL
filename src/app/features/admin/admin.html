@@ -63,9 +63,14 @@
         </button>
       </div>
 
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" [(ngModel)]="searchQuery" placeholder="Tìm theo tên, email, lớp..." />
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" [(ngModel)]="searchQuery" placeholder="Tìm theo tên, email, lớp..." />
+        </div>
+        <button class="btn-export-csv" (click)="exportCSV()" style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(5,150,105,0.25);">
+          <span>📥 Xuất CSV (Excel)</span>
+        </button>
       </div>
     </div>
 
@@ -103,11 +108,16 @@
               </span>
             </td>
             <td>
-              <button class="btn-toggle-hsk" 
-                [class.btn-revoke]="student.hskAdvanceApproved" 
-                (click)="toggleHskApproval(student)">
-                {{ student.hskAdvanceApproved ? 'Khóa HSK 4-6' : 'Duyệt mở khóa' }}
-              </button>
+              <div style="display: flex; gap: 6px; align-items: center;">
+                <button class="btn-toggle-hsk" 
+                  [class.btn-revoke]="student.hskAdvanceApproved" 
+                  (click)="toggleHskApproval(student)">
+                  {{ student.hskAdvanceApproved ? 'Khóa HSK 4-6' : 'Duyệt mở khóa' }}
+                </button>
+                <button class="btn-reset-pw" style="padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;" (click)="resetPassword(student)" title="Đặt lại mật khẩu">
+                  🔑 Đặt lại MK
+                </button>
+              </div>
             </td>
           </tr>
           <tr *ngIf="internalStudents.length === 0">
@@ -129,6 +139,7 @@
             <th>Ngày tham gia</th>
             <th>Phân loại</th>
             <th>Trạng thái tài khoản</th>
+            <th>Thao tác</th>
           </tr>
         </thead>
         <tbody>
@@ -146,9 +157,14 @@
             <td>
               <span class="status-badge active-badge">Đang hoạt động</span>
             </td>
+            <td>
+              <button class="btn-reset-pw" style="padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;" (click)="resetPassword(student)" title="Đặt lại mật khẩu">
+                🔑 Đặt lại MK
+              </button>
+            </td>
           </tr>
           <tr *ngIf="externalStudents.length === 0">
-            <td colspan="7" class="empty-cell">Không tìm thấy học viên nào phù hợp.</td>
+            <td colspan="8" class="empty-cell">Không tìm thấy học viên nào phù hợp.</td>
           </tr>
         </tbody>
       </table>

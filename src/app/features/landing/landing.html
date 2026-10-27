@@ -1,28 +1,28 @@
 <div class="landing-container">
   <!-- Header -->
   <header class="landing-header">
-    <div class="logo-area">
+    <div class="logo-area" style="display: flex; align-items: center; gap: 12px;">
+      <img src="assets/logo-nghiem-linh.jpg" alt="Logo Ngoại Ngữ Nghiêm Linh" style="width: 44px; height: 44px; border-radius: 50%; object-fit: cover; box-shadow: 0 2px 8px rgba(0,0,0,0.12);" />
       <h1>Ngoại Ngữ Nghiêm Linh</h1>
     </div>
-    <div class="header-actions">
-      <span class="lang-selector">NGÔN NGỮ HIỂN THỊ: TIẾNG VIỆT </span>
+    <div class="header-actions" style="display: flex; align-items: center; gap: 16px;">
+      <a routerLink="/teacher-intro" style="font-size: 13px; font-weight: 700; color: #b8860b; text-decoration: none;">👩‍🏫 Cô Nghiêm Linh</a>
+      <span class="lang-selector">TIẾNG VIỆT</span>
     </div>
   </header>
 
   <!-- Main Content -->
   <main class="landing-main">
     <div class="hero-image-container">
-      <img src="https://img.freepik.com/free-vector/learning-concept-illustration_114360-6186.jpg"
-        alt="Học tập vui nhộn" class="hero-image" />
+      <img src="assets/nghiem-linh-2.png"
+        alt="Ngoại Ngữ Nghiêm Linh" class="hero-image" style="box-shadow: 0 12px 32px rgba(90,70,0,0.15); border-radius: 20px; max-height: 420px; object-fit: contain;" />
     </div>
     <div class="hero-content">
       <h2 class="hero-title">
         Ngoại Ngữ Nghiêm Linh
       </h2>
-      <p class="hero-slogan">Nỗ lực - Kiên trì - Bứt phá <br> Học thêm ngoại ngữ mới- Mở thêm vạn cơ hội</p>
+      <p class="hero-slogan">Nỗ lực · Kiên trì · Bứt phá <br> Học thêm ngoại ngữ mới · Mở thêm vạn cơ hội</p>
       <div class="hero-buttons">
-        <!-- Route to login but we might want to pass a query param or state to open register tab -->
-        <!-- For now, we will just route to /login, and the user can switch tabs. We can use fragment or queryParams if needed -->
         <a routerLink="/login" [queryParams]="{ mode: 'register' }" class="btn btn-primary">BẮT ĐẦU</a>
         <a routerLink="/login" [queryParams]="{ mode: 'login' }" class="btn btn-secondary">TÔI ĐÃ CÓ TÀI KHOẢN</a>
       </div>

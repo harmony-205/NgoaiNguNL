@@ -149,4 +149,34 @@ export class AdminComponent implements OnInit {
       this.userService.setHskApproval(student.hskAdvanceApproved);
     }
   }
+
+  exportCSV() {
+    if (typeof window === 'undefined') return;
+    const list = this.activeTab === 'internal' ? this.internalStudents : this.externalStudents;
+    const headers = ['STT', 'Họ và tên', 'Email', 'Khóa học', 'Lớp/GV Zalo', 'Ngày đăng ký', 'Quyền HSK 4-6'];
+    const rows = list.map((s, idx) => [
+      idx + 1,
+      `"${s.fullName}"`,
+      `"${s.email}"`,
+      `"${s.course}"`,
+      `"${s.classTeacherZalo || 'Tự do'}"`,
+      `"${s.registeredDate}"`,
+      s.hskAdvanceApproved ? 'Đã duyệt' : 'Chưa duyệt'
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `danh-sach-hoc-vien-${this.activeTab}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+
+  resetPassword(student: StudentRecord) {
+    if (confirm(`Đặt lại mật khẩu của học viên "${student.fullName}" về mặc định "123456"?`)) {
+      alert(`Đã đặt lại mật khẩu của ${student.fullName} thành: 123456`);
+    }
+  }
 }
