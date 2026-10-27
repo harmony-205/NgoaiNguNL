@@ -17,6 +17,18 @@ export interface StudentRecord {
 
 const DEFAULT_STUDENTS: StudentRecord[] = [
   {
+    id: 'std_viet',
+    fullName: 'Dương Quốc Việt',
+    email: 'duongvietkp2005@gmail.com',
+    course: 'Tiếng Trung',
+    isInternal: false,
+    classTeacherZalo: 'Học viên ngoài TT',
+    registeredDate: '2026-10-27',
+    hskAdvanceApproved: false,
+    status: 'active',
+    password: 'Password123'
+  },
+  {
     id: 'std_1',
     fullName: 'Nguyễn Minh Anh',
     email: 'minhanh.nguyen@gmail.com',
@@ -135,33 +147,28 @@ export class StudentManagementService {
       list = [...DEFAULT_STUDENTS];
     }
 
-    // Auto sync if user in local storage is already "Dương Quốc Việt"
-    if (typeof window !== 'undefined' && window.localStorage) {
-      const authUserStr = localStorage.getItem('nl_auth_user');
-      if (authUserStr) {
-        try {
-          const authUser = JSON.parse(authUserStr);
-          if (authUser && authUser.role === 'student' && authUser.name) {
-            const exists = list.some(s => s.email === authUser.email || s.fullName.toLowerCase() === authUser.name.toLowerCase());
-            if (!exists) {
-              list.unshift({
-                id: 'std_' + Date.now(),
-                fullName: authUser.name,
-                email: authUser.email || 'duongquocviet@gmail.com',
-                course: 'Tiếng Trung',
-                isInternal: false,
-                classTeacherZalo: 'Đăng ký trực tuyến',
-                registeredDate: new Date().toISOString().split('T')[0],
-                hskAdvanceApproved: !!authUser.hskAdvanceApproved,
-                status: 'active',
-                avatarUrl: authUser.avatarUrl
-              });
-            }
-          }
-        } catch {
-          // ignore
-        }
-      }
+    // Strictly clean and filter out any Admin or Preview accounts that might have been saved!
+    list = list.filter(s => 
+      s.email !== 'admin@nghiemlinh.edu.vn' && 
+      !s.fullName.includes('Chế độ xem') &&
+      !s.fullName.includes('Giáo viên')
+    );
+
+    // Make sure Duong Quoc Viet is included cleanly
+    const hasViet = list.some(s => s.fullName.toLowerCase().includes('dương quốc việt') || s.email === 'duongvietkp2005@gmail.com');
+    if (!hasViet) {
+      list.unshift({
+        id: 'std_viet',
+        fullName: 'Dương Quốc Việt',
+        email: 'duongvietkp2005@gmail.com',
+        course: 'Tiếng Trung',
+        isInternal: false,
+        classTeacherZalo: 'Học viên ngoài TT',
+        registeredDate: '2026-10-27',
+        hskAdvanceApproved: false,
+        status: 'active',
+        password: 'Password123'
+      });
     }
 
     this.students.set(list);
@@ -175,6 +182,11 @@ export class StudentManagementService {
   }
 
   addStudent(studentData: Omit<StudentRecord, 'id'>): StudentRecord {
+    // Strictly prevent admin or preview mode from being added as a student
+    if (studentData.email === 'admin@nghiemlinh.edu.vn' || studentData.fullName.includes('Chế độ xem')) {
+      return {} as any;
+    }
+
     const newStudent: StudentRecord = {
       ...studentData,
       id: 'std_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6)

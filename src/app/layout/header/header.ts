@@ -37,13 +37,22 @@ export class HeaderComponent {
   enterStudentPreview() {
     this.isUserMenuOpen = false;
     this.userService.enterStudentPreview();
-    this.router.navigate(['/course/tieng-trung']);
+    this.router.navigateByUrl('/course/tieng-trung');
   }
 
   exitStudentPreview() {
     this.isUserMenuOpen = false;
     this.userService.exitStudentPreview();
-    this.router.navigate(['/admin']);
+    this.router.navigateByUrl('/admin');
+  }
+
+  // Safe fallback alias so no listener or template can throw "switchRole is not a function"
+  switchRole() {
+    if (this.userService.isPreviewStudentMode()) {
+      this.exitStudentPreview();
+    } else if (this.userService.isTeacher()) {
+      this.enterStudentPreview();
+    }
   }
 
   logout() {

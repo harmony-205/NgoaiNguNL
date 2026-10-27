@@ -110,7 +110,16 @@ export class UserService {
       localStorage.setItem('nl_is_preview_student_mode', 'true');
     }
     this.isPreviewStudentMode.set(true);
-    this.loginAs('student', 'Giáo viên (Chế độ xem Học viên)', 'admin@nghiemlinh.edu.vn');
+
+    const previewUser: User = {
+      id: 'usr_preview',
+      name: 'Cô Nghiêm Linh (Xem trước)',
+      email: 'admin@nghiemlinh.edu.vn',
+      role: 'student',
+      avatarUrl: 'assets/logo-nghiem-linh.jpg',
+      hskAdvanceApproved: true
+    };
+    this.setCurrentUser(previewUser);
   }
 
   // Teacher exits student preview mode back to admin
