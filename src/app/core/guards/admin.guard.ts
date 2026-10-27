@@ -9,14 +9,20 @@ import { UserService } from '../services/user.service';
 export const adminGuard: CanActivateFn = (route, state) => {
   const userService = inject(UserService);
   const router = inject(Router);
-  const user = userService.currentUser();
 
-  if (user && user.role === 'teacher') {
+  // 1. If currently teacher/admin
+  if (userService.isTeacher()) {
     return true;
   }
 
-  // Redirect unauthorized users to login or dashboard
-  console.warn('[Security] Unauthorized access attempt to admin portal blocked:', state.url);
+  // 2. If an admin is currently in Student Preview Mode, restore admin session and allow
+  if (userService.isPreviewStudentMode()) {
+    userService.exitStudentPreview();
+    return true;
+  }
+
+  // 3. Strictly block regular students and unauthenticated users
+  console.warn('[Security] Unauthorized access attempt to admin portal blocked for non-admin:', state.url);
   router.navigate(['/dashboard'], {
     queryParams: { error: 'unauthorized_admin' }
   });

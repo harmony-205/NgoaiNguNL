@@ -1,4 +1,5 @@
 import { Routes } from '@angular/router';
+import { adminGuard } from './core/guards/admin.guard';
 
 export const routes: Routes = [
     // Route mặc định khi vào trang web (chuyển hướng đến /landing)
@@ -40,7 +41,7 @@ export const routes: Routes = [
     // Route Quản trị (Admin - Bảo vệ bằng AdminGuard)
     {
         path: 'admin',
-        canActivate: [() => import('./core/guards/admin.guard').then(m => m.adminGuard)],
+        canActivate: [adminGuard],
         loadComponent: () => import('./features/admin/admin').then(m => m.AdminComponent)
     },
 

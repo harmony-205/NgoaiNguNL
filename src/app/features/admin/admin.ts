@@ -1,7 +1,7 @@
 import { Component, OnInit, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { UserService } from '../../core/services/user.service';
 import { StudentManagementService, StudentRecord } from '../../core/services/student-management.service';
 import { CourseMaterialService, CourseMaterial } from '../../core/services/course-material.service';
@@ -32,7 +32,18 @@ export class AdminComponent implements OnInit {
   newMaterialUrl = signal('');
   newMaterialSize = signal('');
 
+  router = inject(Router);
+
   ngOnInit() {
+    if (!this.userService.isTeacher()) {
+      if (this.userService.isPreviewStudentMode()) {
+        this.userService.exitStudentPreview();
+      } else {
+        this.router.navigate(['/dashboard'], { queryParams: { error: 'unauthorized_admin' } });
+        return;
+      }
+    }
+
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');

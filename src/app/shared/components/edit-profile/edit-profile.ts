@@ -1,4 +1,4 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { UserService } from '../../../core/services/user.service';
@@ -26,6 +26,17 @@ export class EditProfileComponent {
   confirmPassword = signal('');
   passwordError = signal('');
   passwordSuccess = signal('');
+
+  // Password visibility toggles
+  showCurrentPass = signal(false);
+  showNewPass = signal(false);
+  showConfirmPass = signal(false);
+
+  // Password validation computations
+  isMinLength = computed(() => this.newPassword().length >= 6);
+  hasNumber = computed(() => /\d/.test(this.newPassword()));
+  hasLetter = computed(() => /[a-zA-Z]/.test(this.newPassword()));
+  isMatch = computed(() => !!this.newPassword() && this.newPassword() === this.confirmPassword());
   
   // Available avatars (1 to 12)
   availableAvatars = Array.from({length: 12}, (_, i) => `assets/free_avatar/free_avatar_${i + 1}.png`);
@@ -44,13 +55,16 @@ export class EditProfileComponent {
       this.userEmail.set(user.email);
       this.isGoogleAccount.set(!!user.isGoogleAuth);
       
-      // Reset password fields
+      // Reset password state
       this.showPasswordSection.set(false);
       this.currentPassword.set('');
       this.newPassword.set('');
       this.confirmPassword.set('');
       this.passwordError.set('');
       this.passwordSuccess.set('');
+      this.showCurrentPass.set(false);
+      this.showNewPass.set(false);
+      this.showConfirmPass.set(false);
 
       this.isVisible.set(true);
     }
@@ -70,6 +84,18 @@ export class EditProfileComponent {
     this.passwordSuccess.set('');
   }
 
+  toggleCurrentPassVisibility() {
+    this.showCurrentPass.set(!this.showCurrentPass());
+  }
+
+  toggleNewPassVisibility() {
+    this.showNewPass.set(!this.showNewPass());
+  }
+
+  toggleConfirmPassVisibility() {
+    this.showConfirmPass.set(!this.showConfirmPass());
+  }
+
   save() {
     // 1. Update Profile (Name & Avatar)
     this.userService.updateProfile(this.editName(), this.selectedAvatar());
@@ -77,22 +103,30 @@ export class EditProfileComponent {
     // 2. If user filled password fields, validate and change
     if (this.showPasswordSection() && !this.isGoogleAccount()) {
       if (this.newPassword()) {
-        if (this.newPassword() !== this.confirmPassword()) {
-          this.passwordError.set('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+        if (!this.currentPassword()) {
+          this.passwordError.set('Vui lòng nhập mật khẩu hiện tại!');
           return;
         }
-        if (this.newPassword().length < 6) {
+        if (!this.isMinLength()) {
           this.passwordError.set('Mật khẩu mới phải có tối thiểu 6 ký tự!');
           return;
         }
+        if (!this.isMatch()) {
+          this.passwordError.set('Mật khẩu mới và xác nhận mật khẩu không khớp!');
+          return;
+        }
+
         const res = this.userService.changePassword(this.currentPassword(), this.newPassword());
         if (!res.success) {
           this.passwordError.set(res.message);
           return;
         }
+        this.passwordSuccess.set('Đổi mật khẩu thành công!');
       }
     }
 
-    this.closeModal();
+    setTimeout(() => {
+      this.closeModal();
+    }, 400);
   }
 }

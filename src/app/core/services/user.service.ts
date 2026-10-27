@@ -21,14 +21,24 @@ export class UserService {
   // Use Angular Signals for reactive state
   currentUser = signal<User | null>(null);
 
+  // Flag to know if currently in Student Preview Mode (activated by Teacher/Admin)
+  isPreviewStudentMode = signal<boolean>(false);
+
   // Computed helper to check if user has admin/teacher rights
   isTeacher = computed(() => this.currentUser()?.role === 'teacher');
   hasHskAdvanceAccess = computed(() => {
     const user = this.currentUser();
-    return user?.role === 'teacher' || !!user?.hskAdvanceApproved;
+    return user?.role === 'teacher' || !!user?.hskAdvanceApproved || this.isPreviewStudentMode();
   });
 
   constructor() {
+    // Check if preview mode was active
+    if (typeof window !== 'undefined' && window.localStorage) {
+      if (localStorage.getItem('nl_is_preview_student_mode') === 'true') {
+        this.isPreviewStudentMode.set(true);
+      }
+    }
+
     // Check saved session in localStorage if running in browser
     if (typeof window !== 'undefined' && window.localStorage) {
       const savedUser = localStorage.getItem('nl_auth_user');
@@ -91,19 +101,25 @@ export class UserService {
     this.setCurrentUser(user);
   }
 
-  // Security: only allow switching role if currently teacher/admin
-  switchRole() {
+  // Teacher enters student preview mode
+  enterStudentPreview() {
     const current = this.currentUser();
-    if (!current) return;
-    
-    // Students cannot switch role!
-    if (current.role === 'student') {
-      console.warn('Học viên không có quyền chuyển sang vai trò Giáo viên.');
-      return;
-    }
+    if (!current || current.role !== 'teacher') return;
 
-    // Teacher can toggle to preview student view
-    this.loginAs('student', 'Giáo viên (Chế độ xem Học viên)', current.email);
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem('nl_is_preview_student_mode', 'true');
+    }
+    this.isPreviewStudentMode.set(true);
+    this.loginAs('student', 'Giáo viên (Chế độ xem Học viên)', 'admin@nghiemlinh.edu.vn');
+  }
+
+  // Teacher exits student preview mode back to admin
+  exitStudentPreview() {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('nl_is_preview_student_mode');
+    }
+    this.isPreviewStudentMode.set(false);
+    this.loginAs('teacher', 'Cô Nghiêm Linh (Admin)', 'admin@nghiemlinh.edu.vn');
   }
 
   setHskApproval(approved: boolean) {
@@ -128,6 +144,10 @@ export class UserService {
   }
 
   logout() {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.removeItem('nl_is_preview_student_mode');
+    }
+    this.isPreviewStudentMode.set(false);
     this.setCurrentUser(null);
   }
 
@@ -163,7 +183,7 @@ export class UserService {
     }
 
     if (user.password && user.password !== currentPass) {
-      return { success: false, message: 'Mật khẩu hiện tại không đúng.' };
+      return { success: false, message: 'Mật khẩu hiện tại không chính xác.' };
     }
 
     if (!newPass || newPass.length < 6) {

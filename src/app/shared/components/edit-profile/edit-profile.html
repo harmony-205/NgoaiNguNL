@@ -1,18 +1,31 @@
 <div class="modal-overlay" *ngIf="isVisible()" (click)="closeModal()">
   <div class="modal-content" (click)="$event.stopPropagation()">
+    
     <div class="modal-header">
-      <h2>Chỉnh sửa thông tin tài khoản</h2>
+      <div class="header-title-box">
+        <span class="header-icon">⚙️</span>
+        <div>
+          <h2>Chỉnh sửa thông tin tài khoản</h2>
+          <p class="header-subtitle">Quản lý hồ sơ cá nhân và bảo mật tài khoản</p>
+        </div>
+      </div>
       <button class="btn-close" (click)="closeModal()">✕</button>
     </div>
 
     <div class="modal-body">
-      <!-- Email (Readonly) -->
-      <div class="form-group">
+      <!-- Email tài khoản -->
+      <div class="form-group email-group">
         <label>Email tài khoản</label>
-        <div class="email-display" style="padding: 10px 14px; background: #f1f5f9; border-radius: 8px; font-size: 14px; color: #475569; display: flex; align-items: center; justify-content: space-between;">
-          <span>{{ userEmail() }}</span>
-          <span *ngIf="isGoogleAccount()" style="font-size: 11px; background: #e0f2fe; color: #0284c7; padding: 2px 8px; border-radius: 9999px; font-weight: 600;">
-            Liên kết Google
+        <div class="email-badge-container">
+          <div class="email-text">
+            <span class="icon-mail">✉️</span>
+            <span>{{ userEmail() }}</span>
+          </div>
+          <span *ngIf="isGoogleAccount()" class="google-verified-pill">
+            <span class="google-icon">G</span> Đăng nhập Google
+          </span>
+          <span *ngIf="!isGoogleAccount()" class="local-account-pill">
+            🛡️ Tài khoản nội bộ
           </span>
         </div>
       </div>
@@ -20,13 +33,19 @@
       <!-- Tên hiển thị -->
       <div class="form-group">
         <label>Họ và tên hiển thị</label>
-        <input type="text" [ngModel]="editName()" (ngModelChange)="editName.set($event)"
-          placeholder="Nhập tên của bạn" />
+        <div class="input-with-icon">
+          <span class="input-icon">👤</span>
+          <input type="text" [ngModel]="editName()" (ngModelChange)="editName.set($event)"
+            placeholder="Nhập họ và tên đầy đủ của bạn" class="styled-input" />
+        </div>
       </div>
 
       <!-- Chọn Avatar -->
-      <div class="form-group">
-        <label>Chọn Ảnh Đại Diện (Avatar)</label>
+      <div class="form-group avatar-selection-group">
+        <div class="avatar-label-row">
+          <label>Chọn Ảnh Đại Diện (Avatar)</label>
+          <span class="avatar-hint">12 nhân vật hoạt họa độc quyền</span>
+        </div>
         <div class="avatar-grid">
           <div class="avatar-option" *ngFor="let avatar of availableAvatars"
             [class.selected]="selectedAvatar() === avatar" (click)="selectAvatar(avatar)">
@@ -36,53 +55,123 @@
         </div>
       </div>
 
-      <!-- Đổi mật khẩu Section -->
-      <div class="password-accordion" style="margin-top: 16px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
-        <div class="password-toggle" (click)="togglePasswordSection()" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none;">
-          <div style="font-weight: 600; color: #1e293b; font-size: 14px; display: flex; align-items: center; gap: 6px;">
-            <span>🔑</span>
-            <span>Đổi mật khẩu</span>
+      <!-- Đổi Mật Khẩu (Section thiết kế cao cấp) -->
+      <div class="password-security-card">
+        
+        <!-- Accordion Header -->
+        <div class="password-header-row" (click)="togglePasswordSection()">
+          <div class="password-title-left">
+            <div class="key-icon-circle">🔑</div>
+            <div>
+              <div class="password-main-title">Đổi mật khẩu tài khoản</div>
+              <div class="password-sub-title">Cập nhật mật khẩu định kỳ để tăng cường an toàn</div>
+            </div>
           </div>
-          <span style="font-size: 12px; color: #64748b;">{{ showPasswordSection() ? '▲ Thu gọn' : '▼ Mở rộng' }}</span>
+          <div class="password-toggle-btn">
+            <span class="toggle-text">{{ showPasswordSection() ? 'Thu gọn' : 'Đổi mật khẩu' }}</span>
+            <span class="toggle-arrow">{{ showPasswordSection() ? '▲' : '▼' }}</span>
+          </div>
         </div>
 
-        <div *ngIf="showPasswordSection()" style="margin-top: 14px;">
-          <!-- If registered with Google -->
-          <div *ngIf="isGoogleAccount()" style="padding: 12px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; color: #166534; font-size: 13px;">
-            ℹ️ Tài khoản của bạn được liên kết qua Google. Bạn có thể đăng nhập bảo mật trực tiếp bằng nút Google mà không cần mật khẩu.
+        <!-- Accordion Body -->
+        <div class="password-body-content" *ngIf="showPasswordSection()">
+          
+          <!-- Thông báo cho tài khoản Google -->
+          <div *ngIf="isGoogleAccount()" class="google-notice-box">
+            <div class="notice-icon">🛡️</div>
+            <div class="notice-text">
+              <h4>Tài khoản được bảo vệ bởi Google</h4>
+              <p>Bạn đang đăng nhập bằng Google OAuth an toàn. Mật khẩu được quản lý trực tiếp bởi Google, bạn không cần thiết lập mật khẩu tại đây.</p>
+            </div>
           </div>
 
-          <!-- If regular account -->
-          <div *ngIf="!isGoogleAccount()" style="display: flex; flex-direction: column; gap: 12px;">
-            <div *ngIf="passwordError()" style="padding: 10px; background: #fef2f2; border: 1px solid #fecaca; color: #dc2626; border-radius: 8px; font-size: 13px;">
-              ⚠️ {{ passwordError() }}
-            </div>
+          <!-- Form đổi mật khẩu cho tài khoản thông thường -->
+          <div *ngIf="!isGoogleAccount()" class="password-fields-container">
             
-            <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 13px;">Mật khẩu hiện tại</label>
-              <input type="password" [ngModel]="currentPassword()" (ngModelChange)="currentPassword.set($event)"
-                placeholder="Nhập mật khẩu hiện tại" />
+            <!-- Error Alert -->
+            <div *ngIf="passwordError()" class="alert-box alert-error">
+              <span class="alert-icon">⚠️</span>
+              <span class="alert-text">{{ passwordError() }}</span>
             </div>
 
-            <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 13px;">Mật khẩu mới (tối thiểu 6 ký tự)</label>
-              <input type="password" [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
-                placeholder="Nhập mật khẩu mới" />
+            <!-- Success Alert -->
+            <div *ngIf="passwordSuccess()" class="alert-box alert-success">
+              <span class="alert-icon">✅</span>
+              <span class="alert-text">{{ passwordSuccess() }}</span>
             </div>
 
-            <div class="form-group" style="margin-bottom: 0;">
-              <label style="font-size: 13px;">Xác nhận mật khẩu mới</label>
-              <input type="password" [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)"
-                placeholder="Nhập lại mật khẩu mới" />
+            <!-- 1. Mật khẩu hiện tại -->
+            <div class="field-item">
+              <label>Mật khẩu hiện tại</label>
+              <div class="input-password-wrapper">
+                <span class="field-icon">🔒</span>
+                <input [type]="showCurrentPass() ? 'text' : 'password'"
+                  [ngModel]="currentPassword()" (ngModelChange)="currentPassword.set($event)"
+                  placeholder="Nhập mật khẩu hiện tại" class="styled-password-input" />
+                <button type="button" class="btn-toggle-eye" (click)="toggleCurrentPassVisibility()" tabindex="-1">
+                  {{ showCurrentPass() ? '🙈' : '👁️' }}
+                </button>
+              </div>
             </div>
+
+            <!-- 2. Mật khẩu mới -->
+            <div class="field-item">
+              <label>Mật khẩu mới</label>
+              <div class="input-password-wrapper">
+                <span class="field-icon">✨</span>
+                <input [type]="showNewPass() ? 'text' : 'password'"
+                  [ngModel]="newPassword()" (ngModelChange)="newPassword.set($event)"
+                  placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)" class="styled-password-input" />
+                <button type="button" class="btn-toggle-eye" (click)="toggleNewPassVisibility()" tabindex="-1">
+                  {{ showNewPass() ? '🙈' : '👁️' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- 3. Xác nhận mật khẩu mới -->
+            <div class="field-item">
+              <label>Xác nhận mật khẩu mới</label>
+              <div class="input-password-wrapper">
+                <span class="field-icon">🎯</span>
+                <input [type]="showConfirmPass() ? 'text' : 'password'"
+                  [ngModel]="confirmPassword()" (ngModelChange)="confirmPassword.set($event)"
+                  placeholder="Nhập lại mật khẩu mới vừa đặt" class="styled-password-input" />
+                <button type="button" class="btn-toggle-eye" (click)="toggleConfirmPassVisibility()" tabindex="-1">
+                  {{ showConfirmPass() ? '🙈' : '👁️' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Yêu cầu mật khẩu (Live Checklist) -->
+            <div class="password-checklist-box" *ngIf="newPassword()">
+              <div class="checklist-title">Tiêu chuẩn mật khẩu:</div>
+              <div class="checklist-items">
+                <div class="check-pill" [class.passed]="isMinLength()">
+                  <span class="pill-check">{{ isMinLength() ? '✓' : '•' }}</span>
+                  <span>Tối thiểu 6 ký tự</span>
+                </div>
+                <div class="check-pill" [class.passed]="hasLetter() && hasNumber()">
+                  <span class="pill-check">{{ (hasLetter() && hasNumber()) ? '✓' : '•' }}</span>
+                  <span>Bao gồm chữ và số</span>
+                </div>
+                <div class="check-pill" [class.passed]="isMatch()">
+                  <span class="pill-check">{{ isMatch() ? '✓' : '•' }}</span>
+                  <span>Khớp mật khẩu xác nhận</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
+
       </div>
+
     </div>
 
     <div class="modal-footer">
-      <button class="btn-cancel" (click)="closeModal()">Hủy</button>
+      <button class="btn-cancel" (click)="closeModal()">Hủy bỏ</button>
       <button class="btn-save" (click)="save()">Lưu thay đổi</button>
     </div>
+
   </div>
 </div>
