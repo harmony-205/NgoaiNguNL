@@ -33,8 +33,14 @@ Dự án được định hướng phát triển sẵn sàng cho mục đích th
   * *Học viên tại Trung tâm:* Có thông tin Lớp/Khóa và giáo viên phụ trách (nhóm Zalo).
   * *Học viên ngoài Trung tâm:* Học viên tự do đăng ký trên website.
 * **Duyệt mở khóa HSK 4-6:** Công cụ 1-click kích hoạt hoặc khóa cấp độ học viên trực tiếp trên bảng điều khiển.
+* **Bảng quản lý tài khoản gọn gàng:** Tối ưu 9 cột chuẩn, thao tác nút dọc loại bỏ thanh cuộn ngang, hỗ trợ xóa mềm (Soft Delete) và khôi phục tài khoản.
 
-### 4. Hồ sơ Giảng viên & Kênh Cộng đồng
+### 4. Hệ thống Xác thực Đa tầng (Authentication & OTP)
+* **Đăng ký tài khoản với OTP Gmail:** Điền đầy đủ thông tin -> Nhận mã OTP qua Gmail thực tế -> Nhập OTP xác thực -> Tạo tài khoản an toàn.
+* **Đăng nhập một chạm với Google OAuth 2.0:** Tích hợp Google Identity Services (GIS).
+* **Quên mật khẩu tiện lợi:** Gộp quy trình nhập Gmail và xác minh OTP, tự động gửi mật khẩu mới bảo mật.
+
+### 5. Hồ sơ Giảng viên & Kênh Cộng đồng
 * Trang giới thiệu chi tiết về **Cô Nghiêm Linh**: học bổng toàn phần chính phủ Trung Quốc, chứng chỉ JLPT N1, HSK6/HSKK Cao cấp, giải thưởng truyền thông, cùng hệ thống liên kết Zalo, Facebook cá nhân, Fanpage và các Group chia sẻ tài liệu.
 
 ---
@@ -44,20 +50,82 @@ Dự án được định hướng phát triển sẵn sàng cho mục đích th
 Dự án được chú trọng đặc biệt về các tiêu chuẩn bảo mật cho ứng dụng web thương mại:
 
 1. **Role-Based Access Control (RBAC):**
-   * Bảo vệ các route nhạy cảm như `/admin` bằng `adminGuard` ([admin.guard.ts](file:///src/app/core/guards/admin.guard.ts)), ngăn chặn truy cập trái phép từ người dùng phổ thông.
+   * Bảo vệ các route nhạy cảm như `/admin` bằng `adminGuard`, ngăn chặn truy cập trái phép từ người dùng phổ thông.
 2. **SSR Hardening & HTTP Security Headers:**
-   * Server Express ([server.ts](file:///src/server.ts)) được cấu hình ẩn định danh máy chủ (`app.disable('x-powered-by')`).
+   * Server Express (`src/server.ts`) được cấu hình ẩn định danh máy chủ (`app.disable('x-powered-by')`).
    * Tự động đính kèm các HTTP Header bảo mật:
      * `X-Content-Type-Options: nosniff` (chống MIME-type sniffing).
      * `X-Frame-Options: SAMEORIGIN` (chống Clickjacking).
      * `X-XSS-Protection: 1; mode=block` (ngăn chặn tấn công Cross-Site Scripting).
      * `Referrer-Policy: strict-origin-when-cross-origin`.
-3. **Anti-Bot & Brute-force Prevention:**
-   * Form đăng ký tích hợp Captcha toán học động tự sinh, ngăn chặn bot tạo tài khoản rác.
-   * Ràng buộc mật khẩu chặt chẽ (tối thiểu 8 ký tự, bao gồm chữ hoa, chữ thường và chữ số).
-4. **An toàn Bí mật Môi trường (Zero Secrets Leaked):**
-   * Tách biệt cấu hình môi trường ([environment.ts](file:///src/environments/environment.ts), [environment.prod.ts](file:///src/environments/environment.prod.ts)).
-   * [`.gitignore`](file:///./.gitignore) được cấu hình chặn toàn bộ `.env`, file chứng chỉ SSL/TLS (`.pem`, `.key`, `.cert`).
+3. **An toàn Bí mật Môi trường (Zero Secrets Leaked):**
+   * Tách biệt cấu hình môi trường giữa dev và production.
+   * `.gitignore` được cấu hình nghiêm ngặt loại trừ toàn bộ file chứa secret cá nhân (`otp-server.mjs`, file chứng chỉ `.pem`, `.key`, `.cert`).
+
+---
+
+## 🔑 Hướng dẫn Cấu hình Google OAuth 2.0 & Gmail SMTP OTP
+
+### 1. Hướng dẫn Lấy mã Google OAuth 2.0 Client ID
+
+Để kích hoạt tính năng **Đăng nhập / Đăng ký bằng Google**, bạn cần lấy **Client ID** từ Google Cloud Platform:
+
+1. Truy cập vào **[Google Cloud Console](https://console.cloud.google.com/)** và đăng nhập tài khoản Google của bạn.
+2. Tạo một **Project mới** (ví dụ: `NgoaiNguNghiemLinh`) hoặc chọn Project có sẵn.
+3. Vào menu **APIs & Services (API & Dịch vụ)** ➜ **OAuth consent screen (Màn hình đồng ý OAuth)**:
+   * **User Type:** Chọn **External (Bên ngoài)** ➜ Bấm **Create (Tạo)**.
+   * Điền **App name (Tên ứng dụng):** `Ngoại Ngữ Nghiêm Linh`.
+   * Điền **User support email (Email hỗ trợ người dùng)** và **Developer contact email**.
+   * Ở bước **Test users (Người dùng thử nghiệm):** Thêm địa chỉ Gmail mà bạn dùng để kiểm thử (ví dụ: `vietdq.google@gmail.com`).
+4. Vào menu **Credentials (Thông tin xác thực)** ➜ Bấm **+ CREATE CREDENTIALS** ➜ Chọn **OAuth client ID**:
+   * **Application type (Loại ứng dụng):** Chọn **Web application**.
+   * **Name (Tên):** `NgoaiNguNghiemLinh_Client`.
+   * **Authorized JavaScript origins (Nguồn JavaScript được phép):**
+     * Thêm `http://localhost:4200` (dành cho môi trường phát triển).
+     * Thêm domain production của bạn khi deploy (ví dụ: `https://nghiemlinh.edu.vn`).
+   * **Authorized redirect URIs (URI chuyển hướng được phép):** Thêm `http://localhost:4200` hoặc domain của bạn.
+   * Bấm **CREATE (Tạo)**.
+5. Một hộp thoại hiện ra, bạn sao chép chuỗi **Customer ID / Client ID** (có đuôi dạng: `xxxxxxxxxxxx-xxxxxxxxxxxxxxxx.apps.googleusercontent.com`).
+6. Dán Client ID vào file cấu hình Frontend tại:  
+   `src/app/core/services/email-otp.service.ts`:
+   ```typescript
+   readonly GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE.apps.googleusercontent.com';
+   ```
+
+---
+
+### 2. Hướng dẫn Lấy Mật khẩu Ứng dụng Gmail (Gmail SMTP App Password) cho dịch vụ gửi OTP
+
+Để hệ thống gửi được mã OTP xác thực thực tế về hòm thư Gmail của học viên khi Đăng ký hoặc Quên mật khẩu, bạn cần tạo **Mật khẩu ứng dụng (App Password)** từ Gmail:
+
+1. Truy cập vào trang quản lý tài khoản Google: **[Google Account Security](https://myaccount.google.com/security)**.
+2. Tại mục **Cách bạn đăng nhập vào Google (How you sign in to Google)**:
+   * Bắt buộc bật **Xác minh 2 bước (2-Step Verification)** (nếu chưa bật).
+3. Sau khi bật Xác minh 2 bước, trên thanh tìm kiếm ở đầu trang tài khoản Google, gõ từ khóa: **`Mật khẩu ứng dụng`** (hoặc **`App passwords`**), hoặc truy cập trực tiếp liên kết:  
+   👉 **[https://myaccount.google.com/apppasswords](https://myaccount.google.com/apppasswords)**.
+4. Nhập tên ứng dụng, ví dụ: `NgoaiNguNghiemLinh OTP` ➜ Bấm **Tạo (Create)**.
+5. Google sẽ hiển thị một mật khẩu ứng dụng gồm **16 ký tự chữ cái** ngẫu nhiên (ví dụ dạng: `fppp httl onhx icdc`).
+6. Sao chép chuỗi 16 ký tự này (viết liền không khoảng trắng).
+7. Tạo file `otp-server.mjs` từ file mẫu `otp-server.example.mjs`:
+   ```bash
+   cp otp-server.example.mjs otp-server.mjs
+   ```
+8. Mở file `otp-server.mjs` và điền Gmail của bạn cùng Mật khẩu ứng dụng vừa tạo:
+   ```javascript
+   const transporter = nodemailer.createTransport({
+     host: 'smtp.gmail.com',
+     port: 465,
+     secure: true,
+     auth: {
+       user: 'dia_chi_gmail_cua_ban@gmail.com',
+       pass: 'chuoi_16_ky_tu_mat_khau_ung_dung'
+     }
+   });
+   ```
+9. Khởi chạy microservice gửi OTP (chạy tại cổng `3001`):
+   ```bash
+   node otp-server.mjs
+   ```
 
 ---
 
@@ -69,6 +137,7 @@ Dự án được chú trọng đặc biệt về các tiêu chuẩn bảo mật
 | **Rendering** | Angular SSR + Express 5 | Server-Side Rendering tối ưu SEO và tốc độ tải trang |
 | **Styling** | Tailwind CSS + SCSS | Giao diện hiện đại, responsive hoàn hảo trên Mobile & Desktop |
 | **Interactive EdTech** | Hanzi Writer | Diễn hoạt SVG nét viết Hán tự động chuẩn quy tắc bút thuận |
+| **OAuth & Mailer** | Google GIS + Nodemailer | Xác thực tài khoản Google và gửi thư OTP qua SMTP Gmail |
 | **Backend & Database** | Supabase / PostgreSQL | Tích hợp sẵn `@supabase/supabase-js`, kiến trúc RLS |
 | **Testing** | Vitest | Bộ kiểm thử tự động đạt 100% Pass rate |
 | **Offline Cache** | IndexedDB Service | Khung lưu trữ offline dữ liệu bài học trên client |
@@ -84,10 +153,10 @@ nghiem-linh-language-web/
 │   ├── app/
 │   │   ├── core/           # Core Module (Guards, Services dùng chung)
 │   │   │   ├── guards/     # admin.guard.ts, auth.guard.ts (RBAC Security)
-│   │   │   └── services/   # user.service.ts, audio.ts, indexed-db.ts
+│   │   │   └── services/   # user.service.ts, email-otp.service.ts, audio.ts
 │   │   ├── features/       # Feature Modules
 │   │   │   ├── admin/      # Bảng điều khiển quản trị viên
-│   │   │   ├── auth/       # Đăng nhập, Đăng ký, Captcha
+│   │   │   ├── auth/       # Đăng nhập, Đăng ký, OTP, Quên mật khẩu
 │   │   │   ├── course/     # Lộ trình học, chi tiết khóa học, chọn HSK
 │   │   │   ├── landing/    # Landing page giới thiệu
 │   │   │   ├── lesson/     # Không gian học tập (Warm-up, Vocab, Grammar, v.v.)
@@ -97,6 +166,7 @@ nghiem-linh-language-web/
 │   ├── environments/       # Cấu hình môi trường dev & prod
 │   ├── server.ts           # Máy chủ SSR Express với Security Headers
 │   └── styles.scss         # Global SCSS & Tailwind Styles
+├── otp-server.example.mjs  # Template máy chủ backend gửi OTP Gmail
 ├── .env.example            # Bản mẫu cấu hình biến môi trường
 └── angular.json            # Cấu hình Angular Build & Budgets
 ```
@@ -114,14 +184,15 @@ nghiem-linh-language-web/
 npm install
 ```
 
-### 3. Cấu hình Biến môi trường
-Tạo file `.env` từ file mẫu:
+### 3. Khởi chạy Dịch vụ Gửi mã OTP (Terminal 1)
 ```bash
-cp .env.example .env
+# Tạo file otp-server.mjs từ file mẫu và cấu hình Gmail SMTP
+cp otp-server.example.mjs otp-server.mjs
+node otp-server.mjs
 ```
-*(Điền Supabase URL và Public Anon Key nếu muốn kết nối trực tiếp với backend Supabase).*
+Máy chủ gửi OTP sẽ lắng nghe tại `http://localhost:3001`.
 
-### 4. Khởi chạy Development Server
+### 4. Khởi chạy Development Server (Terminal 2)
 ```bash
 npm start
 # Hoặc: npx ng serve --port 4200
@@ -143,9 +214,17 @@ Thư mục xuất bản tối ưu: `dist/nghiem-linh-language-web`
 
 ## 👥 Vai trò Demo phục vụ Đánh giá (Portfolio & Testing)
 
-Hệ thống hỗ trợ cơ chế chuyển đổi vai trò nhanh ngay trong Menu Người dùng (Avatar ở góc trên bên phải):
-* **Vai trò Giáo viên / Admin (Cô Nghiêm Linh):** Xem được tab **⚙️ Quản trị**, truy cập cổng quản trị danh sách học viên, duyệt quyền HSK 4-6.
-* **Vai trò Học viên (Student Demo):** Trải nghiệm giao diện học tập chuẩn, tự động bị chặn nếu cố tình vào `/admin`.
+Hệ thống hỗ trợ tài khoản mẫu có sẵn để trải nghiệm toàn bộ luồng:
+* **Tài khoản Quản trị / Giáo viên (Admin):**
+  * Email: `admin@nghiemlinh.edu.vn` (hoặc `admin`)
+  * Mật khẩu: `Admin@123`
+  * Quyền hạn: Quản trị học viên, duyệt mở khóa HSK 4-6, xóa/khôi phục tài khoản, đặt lại mật khẩu, xem trước giao diện học viên.
+* **Tài khoản Học viên (Student Password):**
+  * Email: `duongvietkp2005@gmail.com`
+  * Mật khẩu: `Password123`
+* **Tài khoản Học viên Google (Google OAuth Demo):**
+  * Email: `vietdq.google@gmail.com`
+  * Đăng nhập trực tiếp bằng nút "Đăng nhập bằng Google".
 
 ---
 

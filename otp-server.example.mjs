@@ -87,3 +87,4 @@ app.post('/api/send-otp', async (req, res) => {
 app.listen(PORT, () => {
   console.log(`OTP Mailer Server đang chạy tại http://localhost:${PORT}`);
 });
+
