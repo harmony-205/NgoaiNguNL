@@ -70,7 +70,7 @@ app.post('/api/send-otp', async (req, res) => {
 
   try {
     const info = await transporter.sendMail({
-      from: '"Ngoại Ngữ Nghiêm Linh" <duongvietkp2005@gmail.com>',
+      from: `"Ngoại Ngữ Nghiêm Linh" <${process.env.SMTP_USER || 'your_email@gmail.com'}>`,
       to: to,
       subject: subject,
       html: htmlContent

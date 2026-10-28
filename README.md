@@ -76,7 +76,7 @@ Dự án được chú trọng đặc biệt về các tiêu chuẩn bảo mật
    * **User Type:** Chọn **External (Bên ngoài)** ➜ Bấm **Create (Tạo)**.
    * Điền **App name (Tên ứng dụng):** `Ngoại Ngữ Nghiêm Linh`.
    * Điền **User support email (Email hỗ trợ người dùng)** và **Developer contact email**.
-   * Ở bước **Test users (Người dùng thử nghiệm):** Thêm địa chỉ Gmail mà bạn dùng để kiểm thử (ví dụ: `vietdq.google@gmail.com`).
+   * Ở bước **Test users (Người dùng thử nghiệm):** Thêm địa chỉ Gmail mà bạn dùng để kiểm thử (ví dụ: `your_test_email@gmail.com`).
 4. Vào menu **Credentials (Thông tin xác thực)** ➜ Bấm **+ CREATE CREDENTIALS** ➜ Chọn **OAuth client ID**:
    * **Application type (Loại ứng dụng):** Chọn **Web application**.
    * **Name (Tên):** `NgoaiNguNghiemLinh_Client`.
@@ -214,17 +214,14 @@ Thư mục xuất bản tối ưu: `dist/nghiem-linh-language-web`
 
 ## 👥 Vai trò Demo phục vụ Đánh giá (Portfolio & Testing)
 
-Hệ thống hỗ trợ tài khoản mẫu có sẵn để trải nghiệm toàn bộ luồng:
+Hệ thống hỗ trợ tài khoản quản trị mẫu có sẵn để người đánh giá trải nghiệm toàn bộ các tính năng:
 * **Tài khoản Quản trị / Giáo viên (Admin):**
-  * Email: `admin@nghiemlinh.edu.vn` (hoặc `admin`)
+  * Email: `admin@nghiemlinh.edu.vn` (hoặc tên đăng nhập `admin`)
   * Mật khẩu: `Admin@123`
-  * Quyền hạn: Quản trị học viên, duyệt mở khóa HSK 4-6, xóa/khôi phục tài khoản, đặt lại mật khẩu, xem trước giao diện học viên.
-* **Tài khoản Học viên (Student Password):**
-  * Email: `duongvietkp2005@gmail.com`
-  * Mật khẩu: `Password123`
-* **Tài khoản Học viên Google (Google OAuth Demo):**
-  * Email: `vietdq.google@gmail.com`
-  * Đăng nhập trực tiếp bằng nút "Đăng nhập bằng Google".
+  * Quyền hạn: Quản trị danh sách học viên, duyệt mở khóa các khóa học HSK 4-6, xóa/khôi phục tài khoản, đặt lại mật khẩu học viên, xem trước giao diện học viên.
+
+* **Tài khoản Học viên (Student):**
+  * Người dùng và người đánh giá có thể tự do tạo tài khoản học viên mới tại tab **"Tạo tài khoản"** trên website với quy trình xác thực mã OTP gửi về Gmail thực tế, hoặc trải nghiệm đăng nhập nhanh một chạm qua **Google OAuth**.
 
 ---
 
