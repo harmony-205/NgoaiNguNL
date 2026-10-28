@@ -59,4 +59,11 @@ docx_temp/
 *.doc
 *.tmp
 doc-images/
+extracted_doc_media/
+extracted_requirements.txt
+nghiemlinh2198-main/
+ngoaingunghiemlinh-main/
 
+# OTP Server Private Config (Prevent credentials leak)
+otp-server.mjs
+!otp-server.example.mjs

@@ -8,41 +8,92 @@
       <p class="auth-sub-slogan">Học thêm ngoại ngữ mới · Mở thêm vạn cơ hội</p>
     </div>
 
-    <!-- Tabs -->
-    <div class="auth-tabs">
-      <button [class.active]="isLoginMode" (click)="toggleMode(true)">Đăng nhập</button>
-      <button [class.active]="!isLoginMode" (click)="toggleMode(false)">Tạo tài khoản</button>
+    <!-- Tabs (Chỉ hiển thị khi đang ở chế độ Đăng nhập hoặc Tạo tài khoản) -->
+    <div class="auth-tabs" *ngIf="authView !== 'forgot_password'">
+      <button [class.active]="authView === 'login'" (click)="toggleMode('login')">Đăng nhập</button>
+      <button [class.active]="authView === 'register'" (click)="toggleMode('register')">Tạo tài khoản</button>
     </div>
 
-    <!-- Login Form -->
-    <form *ngIf="isLoginMode" [formGroup]="loginForm" (ngSubmit)="onLoginSubmit()" class="auth-form fade-in">
-      <div class="form-group">
-        <label>Tên đăng nhập hoặc Email</label>
-        <input type="text" formControlName="username" placeholder="Nhập tên đăng nhập hoặc email" />
+    <!-- ========================================== -->
+    <!-- 1. FORM ĐĂNG NHẬP -->
+    <!-- ========================================== -->
+    <form *ngIf="authView === 'login'" [formGroup]="loginForm" (ngSubmit)="onLoginSubmit()" class="auth-form fade-in">
+      <!-- Error Alert -->
+      <div class="login-error-alert" *ngIf="loginError">
+        <span>⚠️ {{ loginError }}</span>
       </div>
+
+      <!-- Trường Gmail -->
       <div class="form-group">
-        <label>Mật khẩu</label>
-        <input type="password" formControlName="password" placeholder="••••••••" />
+        <label>Gmail <span class="required" style="color: #ef4444;">*</span></label>
+        <input #loginEmailInput
+          id="login-email"
+          name="email"
+          autocomplete="email"
+          type="email"
+          formControlName="email"
+          (input)="syncAutofillValues()"
+          (change)="syncAutofillValues()"
+          (blur)="syncAutofillValues()"
+          (focus)="syncAutofillValues()"
+          (animationstart)="onAutofillAnimation($event)"
+          placeholder="Nhập địa chỉ Gmail của bạn (ví dụ: ban@gmail.com)" />
+        <div class="error-message" *ngIf="loginForm.get('email')?.touched && loginForm.get('email')?.invalid && !loginEmailInput.value">
+          <span *ngIf="loginForm.get('email')?.hasError('required')">Vui lòng nhập địa chỉ Gmail</span>
+          <span *ngIf="loginForm.get('email')?.hasError('email')">Vui lòng nhập đúng định dạng Gmail (ví dụ: ten@gmail.com)</span>
+        </div>
+      </div>
+
+      <!-- Trường Mật khẩu với chức năng Ẩn / Hiện pass -->
+      <div class="form-group">
+        <label>Mật khẩu <span class="required" style="color: #ef4444;">*</span></label>
+        <div class="input-password-wrapper">
+          <input #loginPasswordInput
+            id="login-password"
+            name="password"
+            autocomplete="current-password"
+            [type]="showLoginPassword ? 'text' : 'password'"
+            formControlName="password"
+            (input)="syncAutofillValues()"
+            (change)="syncAutofillValues()"
+            (blur)="syncAutofillValues()"
+            (focus)="syncAutofillValues()"
+            (animationstart)="onAutofillAnimation($event)"
+            placeholder="••••••••" />
+          <button type="button" class="btn-toggle-eye" (click)="toggleLoginPassword()" tabindex="-1" title="Ẩn/hiện mật khẩu">
+            {{ showLoginPassword ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        <div class="error-message" *ngIf="loginForm.get('password')?.touched && loginForm.get('password')?.hasError('required') && !loginPasswordInput.value">
+          <span>Vui lòng nhập mật khẩu</span>
+        </div>
       </div>
 
       <div class="form-actions">
-        <a href="#" class="forgot-password">Quên mật khẩu?</a>
+        <a href="javascript:void(0)" (click)="startForgotPassword()" class="forgot-password">Quên mật khẩu?</a>
       </div>
 
-      <button type="submit" class="btn-submit" [disabled]="loginForm.invalid">Đăng nhập</button>
+      <button type="submit" class="btn-submit" (mouseenter)="syncAutofillValues()">
+        Đăng nhập
+      </button>
 
       <div class="divider"><span>HOẶC</span></div>
-      <button type="button" class="btn-google">
+      <button type="button" class="btn-google" (click)="handleGoogleAuth('login')">
         <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" />
         Đăng nhập bằng Google
       </button>
     </form>
 
-    <!-- Register Form -->
-    <form *ngIf="!isLoginMode" [formGroup]="registerForm" (ngSubmit)="onRegisterSubmit()" class="auth-form fade-in">
+    <!-- ========================================== -->
+    <!-- 2. FORM TẠO TÀI KHOẢN (Luồng OTP trực tiếp trên Form) -->
+    <!-- ========================================== -->
+    <form *ngIf="authView === 'register'" [formGroup]="registerForm" (ngSubmit)="onRegisterSubmit()" class="auth-form fade-in">
       <div class="form-group">
-        <label>Họ và tên <span class="required">*</span></label>
+        <label>Họ và tên <span class="required" style="color: #ef4444;">*</span></label>
         <input type="text" formControlName="fullName" placeholder="Ví dụ: Nguyễn Minh Anh" />
+        <div class="error-message" *ngIf="registerForm.get('fullName')?.touched && registerForm.get('fullName')?.invalid">
+          <span>Vui lòng nhập họ và tên của bạn</span>
+        </div>
       </div>
 
       <div class="form-group">
@@ -69,82 +120,236 @@
         <input type="text" formControlName="previousClass" placeholder="Ví dụ: HSK1 - Cô Hạnh" />
       </div>
 
+      <!-- Trường Gmail -->
       <div class="form-group">
-        <label>Email<span class="required">*</span></label>
-        <input type="email" formControlName="email" placeholder="ban@email.com" />
-        <ng-container *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid">
-
-          <div class="error-message">
-            <span *ngIf="registerForm.get('email')?.hasError('required')">
-              Vui lòng nhập email
-            </span>
-            <span *ngIf="registerForm.get('email')?.hasError('pattern')">
-              Vui lòng nhập đúng định dạng email
-            </span>
-          </div>
-        </ng-container>
-      </div>
-
-      <div class="form-group">
-        <label>Tên đăng nhập<span class="required">*</span></label>
-        <input type="text" formControlName="username" placeholder="Ví dụ: josee" />
-      </div>
-
-      <div class="form-group">
-        <label>Mật khẩu<span class="required">*</span></label>
-        <input type="password" formControlName="password" placeholder="••••••••" />
-        <ng-container *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
-          <div class="error-message">
-            <span *ngIf="registerForm.get('password')?.hasError('required')">
-              Vui lòng nhập mật khẩu
-            </span>
-            <span *ngIf="registerForm.get('password')?.hasError('pattern')">
-              Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường và chữ số.
-            </span>
-          </div>
-        </ng-container>
-      </div>
-
-      <div class="form-group">
-        <label>Nhập lại mật khẩu<span class="required">*</span></label>
-        <input type="password" formControlName="confirmPassword" placeholder="••••••••" />
-        <ng-container
-          *ngIf="registerForm.get('confirmPassword')?.touched && registerForm.get('confirmPassword')?.invalid">
-          <div class="error-message">
-            <span *ngIf="registerForm.get('confirmPassword')?.hasError('required')">
-              Vui lòng nhập lại mật khẩu
-            </span>
-            <span *ngIf="registerForm.get('confirmPassword')?.hasError('mismatch')">
-              Mật khẩu không khớp
-            </span>
-          </div>
-        </ng-container>
-      </div>
-
-      <!-- Captcha -->
-      <div class="form-group captcha-group">
-        <label>Mã bảo vệ Captcha <span class="required">*</span></label>
-        <div class="captcha-box">
-          <div class="captcha-badge" (click)="generateCaptcha()" title="Bấm để đổi mã khác">
-            <span class="calc-text">{{ captchaQuestion }}</span>
-            <span class="refresh-icon">🔄</span>
-          </div>
-          <input type="text" formControlName="captcha" placeholder="Nhập kết quả" class="captcha-input" />
+        <label>Gmail đăng ký <span class="required" style="color: #ef4444;">*</span></label>
+        <input #registerEmailInput
+          id="register-email"
+          name="email"
+          autocomplete="email"
+          type="email"
+          formControlName="email"
+          (input)="syncAutofillValues()"
+          (change)="syncAutofillValues()"
+          placeholder="Nhập địa chỉ Gmail để nhận mã OTP (ví dụ: ban@gmail.com)" />
+        <div class="error-message" *ngIf="registerForm.get('email')?.touched && registerForm.get('email')?.invalid && !registerEmailInput.value">
+          <span *ngIf="registerForm.get('email')?.hasError('required')">Vui lòng nhập Gmail</span>
+          <span *ngIf="registerForm.get('email')?.hasError('email')">Vui lòng nhập đúng định dạng Gmail (ví dụ: ten@gmail.com)</span>
         </div>
-        <ng-container *ngIf="registerForm.get('captcha')?.touched && registerForm.hasError('captchaInvalid')">
-          <div class="error-message">
-            <span>Kết quả phép tính không đúng, vui lòng thử lại</span>
-          </div>
-        </ng-container>
       </div>
 
-      <button type="submit" class="btn-submit" [disabled]="registerForm.invalid">Tạo tài khoản</button>
+      <!-- Trường Mật khẩu với chức năng Ẩn / Hiện pass -->
+      <div class="form-group">
+        <label>Mật khẩu <span class="required" style="color: #ef4444;">*</span></label>
+        <div class="input-password-wrapper">
+          <input [type]="showRegisterPassword ? 'text' : 'password'" formControlName="password" placeholder="••••••••" />
+          <button type="button" class="btn-toggle-eye" (click)="toggleRegisterPassword()" tabindex="-1" title="Ẩn/hiện mật khẩu">
+            {{ showRegisterPassword ? '🙈' : '👁️' }}
+          </button>
+        </div>
+        <div class="error-message" *ngIf="registerForm.get('password')?.touched && registerForm.get('password')?.invalid">
+          <span *ngIf="registerForm.get('password')?.hasError('required')">Vui lòng nhập mật khẩu</span>
+          <span *ngIf="registerForm.get('password')?.hasError('minlength')">Mật khẩu phải có tối thiểu 6 ký tự</span>
+        </div>
+      </div>
+
+      <!-- Trường Nhập lại mật khẩu (Không có chức năng ẩn/hiện pass) -->
+      <div class="form-group">
+        <label>Nhập lại mật khẩu <span class="required" style="color: #ef4444;">*</span></label>
+        <input type="password" formControlName="confirmPassword" placeholder="••••••••" />
+        <div class="error-message" *ngIf="registerForm.get('confirmPassword')?.touched && registerForm.get('confirmPassword')?.invalid">
+          <span *ngIf="registerForm.get('confirmPassword')?.hasError('required')">Vui lòng nhập lại mật khẩu</span>
+          <span *ngIf="registerForm.hasError('mismatch')">Mật khẩu nhập lại không khớp</span>
+        </div>
+      </div>
+
+      <!-- Trường Mã OTP xác thực và Nút "Gửi mã OTP" -->
+      <div class="form-group" style="margin-top: 6px;">
+        <label>Mã xác thực OTP gửi về Gmail <span class="required" style="color: #ef4444;">*</span></label>
+        <div style="display: flex; gap: 8px; align-items: center;">
+          <input type="text" formControlName="otp" maxlength="6" placeholder="Nhập mã 6 chữ số" style="flex: 1;" />
+          <button type="button" class="btn-send-otp" (click)="sendRegisterOtp()" [disabled]="isSendingRegisterOtp || registerOtpCountdown > 0">
+            {{ isSendingRegisterOtp ? 'Đang gửi...' : (registerOtpCountdown > 0 ? ('Gửi lại (' + registerOtpCountdown + 's)') : (registerOtpSent ? 'Gửi lại mã' : 'Gửi mã OTP')) }}
+          </button>
+        </div>
+
+        <div class="login-success-alert" *ngIf="registerOtpMsg" style="margin-top: 8px; padding: 10px 14px; font-size: 13px;">
+          <span>📩 {{ registerOtpMsg }}</span>
+        </div>
+
+        <div class="login-error-alert" *ngIf="registerOtpError" style="margin-top: 8px; padding: 10px 14px; font-size: 13px;">
+          <span>⚠️ {{ registerOtpError }}</span>
+        </div>
+      </div>
+
+      <!-- Nút Tạo tài khoản hoàn tất -->
+      <button type="submit" class="btn-submit" [disabled]="registerForm.invalid" style="margin-top: 14px;">
+        Tạo tài khoản
+      </button>
 
       <div class="divider"><span>HOẶC</span></div>
-      <button type="button" class="btn-google" (click)="signUpWithGoogle()">
+      <button type="button" class="btn-google" (click)="handleGoogleAuth('register')">
         <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" />
         Tạo tài khoản bằng Google
       </button>
     </form>
+
+    <!-- ========================================== -->
+    <!-- 3. QUY TRÌNH QUÊN MẬT KHẨU (Gộp Bước 1 & Bước 2) -->
+    <!-- ========================================== -->
+    <div *ngIf="authView === 'forgot_password'" class="auth-form fade-in">
+      <!-- Bước 1 & 2 gộp chung: Nhập Gmail + Nhận & Điền mã OTP -->
+      <div *ngIf="forgotStep === 'enter_email_and_otp'">
+        <div class="forgot-header">
+          <h3>🔑 Quên mật khẩu?</h3>
+          <p>Nhập địa chỉ Gmail và bấm <strong>"Gửi mã OTP"</strong>. Sau đó nhập mã 6 số nhận được trong hòm thư Gmail để tiếp tục.</p>
+        </div>
+
+        <div class="login-error-alert" *ngIf="forgotError" style="margin-bottom: 14px;">
+          <span>⚠️ {{ forgotError }}</span>
+        </div>
+
+        <!-- Ô 1: Gmail đăng ký tài khoản -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label>Gmail đăng ký tài khoản <span class="required" style="color: #ef4444;">*</span></label>
+          <input #forgotEmailInput
+            id="forgot-email"
+            name="email"
+            autocomplete="email"
+            type="email"
+            [(ngModel)]="forgotEmail"
+            (input)="syncAutofillValues()"
+            (change)="syncAutofillValues()"
+            (blur)="syncAutofillValues()"
+            placeholder="Nhập địa chỉ Gmail của bạn" />
+        </div>
+
+        <!-- Ô 2: Mã xác thực OTP gửi về Gmail (Dạng input + button giống như Ảnh 1) -->
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label>Mã xác thực OTP gửi về Gmail <span class="required" style="color: #ef4444;">*</span></label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="text" [(ngModel)]="forgotOtp" maxlength="6" placeholder="Nhập mã 6 chữ số" style="flex: 1;" />
+            <button type="button" class="btn-send-otp" (click)="sendForgotOtp()" [disabled]="isSendingForgotOtp || forgotCountdown > 0">
+              {{ isSendingForgotOtp ? 'Đang gửi...' : (forgotCountdown > 0 ? ('Gửi lại (' + forgotCountdown + 's)') : (forgotOtpSent ? 'Gửi lại mã' : 'Gửi mã OTP')) }}
+            </button>
+          </div>
+
+          <!-- Thông báo xanh khi gửi thành công -->
+          <div class="login-success-alert" *ngIf="forgotOtpMsg" style="margin-top: 8px; padding: 10px 14px; font-size: 13px;">
+            <span>📩 {{ forgotOtpMsg }}</span>
+          </div>
+        </div>
+
+        <!-- Nút Xác nhận mã OTP để sang bước đổi mật khẩu -->
+        <button type="button" class="btn-submit" (click)="verifyForgotOtp()" style="margin-top: 4px;">
+          Xác nhận mã OTP
+        </button>
+
+        <div class="forgot-footer-actions" style="margin-top: 14px;">
+          <button type="button" class="btn-back-link" (click)="cancelForgotPassword()">
+            ← Quay lại Đăng nhập
+          </button>
+        </div>
+      </div>
+
+      <!-- Bước 2: Nhập Mật khẩu mới & Xác nhận mật khẩu mới -->
+      <div *ngIf="forgotStep === 'reset_password'">
+        <div class="forgot-header">
+          <h3>🔒 Đặt mật khẩu mới</h3>
+          <p>Thiết lập mật khẩu mới cho tài khoản <strong>{{ forgotEmail }}</strong>.</p>
+        </div>
+
+        <div class="login-error-alert" *ngIf="forgotError" style="margin-bottom: 14px;">
+          <span>⚠️ {{ forgotError }}</span>
+        </div>
+
+        <!-- Mật khẩu mới (Có nút ẩn/hiện pass) -->
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label>Mật khẩu mới <span class="required" style="color: #ef4444;">*</span></label>
+          <div class="input-password-wrapper">
+            <input [type]="showForgotNewPassword ? 'text' : 'password'" [(ngModel)]="forgotNewPassword" placeholder="Nhập mật khẩu mới (tối thiểu 6 ký tự)" />
+            <button type="button" class="btn-toggle-eye" (click)="toggleForgotNewPassword()" tabindex="-1" title="Ẩn/hiện mật khẩu">
+              {{ showForgotNewPassword ? '🙈' : '👁️' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Xác nhận mật khẩu mới (ĐÃ XÓA chức năng ẩn/hiện pass theo yêu cầu của bạn) -->
+        <div class="form-group" style="margin-bottom: 18px;">
+          <label>Xác nhận mật khẩu mới <span class="required" style="color: #ef4444;">*</span></label>
+          <input type="password" [(ngModel)]="forgotConfirmPassword" placeholder="Nhập lại mật khẩu mới vừa đặt" />
+        </div>
+
+        <button type="button" class="btn-submit" (click)="submitResetPassword()" [disabled]="!forgotNewPassword || !forgotConfirmPassword">
+          Cập nhật mật khẩu mới
+        </button>
+
+        <div class="forgot-footer-actions" style="margin-top: 14px;">
+          <button type="button" class="btn-back-link" (click)="forgotStep = 'enter_email_and_otp'; cdr.detectChanges()">
+            ← Quay lại bước trước
+          </button>
+        </div>
+      </div>
+
+      <!-- Bước 3: Thành công & Đăng nhập lại -->
+      <div *ngIf="forgotStep === 'success'" style="text-align: center; padding: 10px 0;">
+        <div style="font-size: 50px; margin-bottom: 12px;">🎉</div>
+        <h3 style="margin: 0 0 8px; font-size: 20px; font-weight: 800; color: #166534;">Đổi mật khẩu thành công!</h3>
+        <p style="margin: 0 0 20px; font-size: 13.5px; color: #475569; line-height: 1.5;">
+          Mật khẩu của tài khoản <strong>{{ forgotEmail }}</strong> đã được cập nhật thành công. Vui lòng đăng nhập lại với mật khẩu mới vừa tạo.
+        </p>
+
+        <button type="button" class="btn-submit" (click)="returnToLoginWithNewPassword()">
+          Đăng nhập ngay
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================== -->
+<!-- 4. POPUP KẾT NỐI GOOGLE OAUTH CHÍNH THỨC -->
+<!-- ============================================================== -->
+<div class="auth-modal-overlay" *ngIf="isGoogleModalOpen" (click)="closeGoogleModal()">
+  <div class="auth-modal-card" (click)="$event.stopPropagation()">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 24px; height: 24px;" />
+        <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #1e293b;">
+          {{ googleActionType === 'login' ? 'Đăng nhập với Google' : 'Tạo tài khoản với Google' }}
+        </h3>
+      </div>
+      <button (click)="closeGoogleModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b;">✕</button>
+    </div>
+
+    <div style="background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 12px; padding: 14px; margin-bottom: 16px; font-size: 13px; color: #1e40af; line-height: 1.5;">
+      <strong>✅ Đã kết nối Google OAuth Client ID:</strong>
+      <div style="margin-top: 4px; font-family: 'Consolas', monospace; font-size: 11px; word-break: break-all; color: #2563eb; background: #ffffff; padding: 6px; border-radius: 6px;">
+        {{ emailOtpService.GOOGLE_CLIENT_ID }}
+      </div>
+      <div style="margin-top: 6px; font-size: 12px; color: #3b82f6;">
+        Tên ứng dụng: <strong>NgoaiNguNghiemLinh_Client</strong><br>
+        Origin được cấp phép: <code>http://localhost:4200</code>
+      </div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <button type="button" class="btn-submit" (click)="confirmGoogleDemoLogin('vietdq.google@gmail.com')" style="margin: 0; background: #2563eb; display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 18px; height: 18px; background: white; border-radius: 50%; padding: 1px;" />
+        <span>Đăng nhập tài khoản Google: <strong>Dương Quốc Việt (vietdq.google@gmail.com)</strong></span>
+      </button>
+
+      <div style="text-align: center; color: #64748b; font-size: 12px; font-weight: 700; margin: 4px 0;">— HOẶC ĐĂNG NHẬP THỬ GMAIL GOOGLE KHÁC —</div>
+      <div style="display: flex; gap: 8px;">
+        <input type="email" [(ngModel)]="customGoogleEmail" placeholder="Nhập địa chỉ Gmail Google (vd: ban@gmail.com)" style="flex: 1; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 12px; font-size: 13px; outline: none;" />
+        <button type="button" class="btn-send-otp" (click)="confirmGoogleDemoLogin(customGoogleEmail)" [disabled]="!customGoogleEmail || !customGoogleEmail.includes('@')" style="padding: 10px 16px; font-size: 13px;">
+          Đăng nhập
+        </button>
+      </div>
+
+      <button type="button" class="btn-back-link" (click)="closeGoogleModal()" style="text-align: center; margin-top: 4px;">
+        Đóng cửa sổ
+      </button>
+    </div>
   </div>
 </div>

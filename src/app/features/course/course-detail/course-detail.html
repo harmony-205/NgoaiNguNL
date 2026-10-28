@@ -28,19 +28,40 @@
     <div class="banner-divider"></div>
 
     <div class="banner-content">
-      <h3 class="banner-headline">{{ courseTitle | uppercase }}</h3>
+      <h3 class="banner-headline">NGOẠI NGỮ NGHIÊM LINH</h3>
       <p class="banner-desc">
-        Ngoại ngữ Nghiêm Linh chuyên đào tạo ngôn ngữ và luyện thi theo lộ trình bài bản, phù hợp với mọi đối tượng học viên từ mất gốc đến nâng cao.
+        Ngoại ngữ Nghiêm Linh chuyên đào tạo tiếng Trung theo lộ trình bài bản, phù hợp với nhiều đối tượng học viên và mục tiêu học tập khác nhau.
       </p>
 
-      <h4 class="sub-headline">Các chương trình đào tạo trọng tâm:</h4>
+      <h4 class="sub-headline">Các khóa học tại trung tâm:</h4>
       <div class="course-bullets-grid">
-        <div class="bullet-item">• Lớp online đa dạng trình độ, từ người mới bắt đầu đến nâng cao chuyên sâu.</div>
-        <div class="bullet-item">• Lớp học 1 kèm 1 với lịch học linh hoạt, cá nhân hóa theo từng nhu cầu.</div>
-        <div class="bullet-item">• Lớp sửa phát âm chuyên sâu, chuẩn khẩu hình giọng Bắc Kinh & Tokyo.</div>
-        <div class="bullet-item">• Luyện thi HSK 1-6, JLPT N5-N1 và CSCA Toán - Lý bằng tiếng Trung.</div>
+        <div class="bullet-item">• Lớp tiếng Trung online đa dạng trình độ, từ người mới bắt đầu đến các khóa học nâng cao.</div>
+        <div class="bullet-item">• Lớp học 1 kèm 1 với lịch học linh hoạt, cá nhân hóa theo nhu cầu của từng học viên.</div>
+        <div class="bullet-item">• Lớp sửa phát âm chuyên sâu, giúp xây dựng nền tảng phát âm chuẩn ngay từ đầu.</div>
+        <div class="bullet-item">• Lớp luyện thi cấp tốc dành cho các kỳ thi HSK và các mục tiêu học tập cụ thể.</div>
       </div>
+
+      <h4 class="sub-headline" style="margin-top: 18px;">Đội ngũ giáo viên</h4>
+      <p class="banner-desc" style="margin-bottom: 0;">
+        Đội ngũ giáo viên của trung tâm là những cử nhân chuyên ngành Ngôn ngữ Trung Quốc tốt nghiệp từ các trường đại học đào tạo ngoại ngữ uy tín, trong đó có các giáo viên đã trúng tuyển và đang theo học hoặc đã hoàn thành chương trình thạc sĩ tại Trung Quốc. Với phát âm chuẩn, chuyên môn vững vàng và kinh nghiệm giảng dạy thực tế, đội ngũ giáo viên luôn tận tâm đồng hành, giúp học viên xây dựng nền tảng tiếng Trung vững chắc và tiến bộ một cách hiệu quả.
+      </p>
     </div>
+  </div>
+
+  <!-- Admin Lesson Control Bar (Visible for Teacher / Admin) -->
+  <div class="admin-lesson-control-bar" *ngIf="userService.isTeacher()">
+    <div class="control-info">
+      <span class="shield-icon">🛡️</span>
+      <span>
+        Quản trị viên: Đang xem cấp độ <strong>{{ currentHsk.toUpperCase() }}</strong>. Trạng thái: 
+        <span class="status-tag" [class.has-data]="hasLevelData(currentHsk)">
+          {{ hasLevelData(currentHsk) ? '✓ Đã có bài giảng & bài tập' : 'Chưa có bài giảng (Sắp ra mắt đối với học viên)' }}
+        </span>
+      </span>
+    </div>
+    <button class="btn-admin-add-lesson" (click)="openAddLessonModal()">
+      <span>➕ Thêm / Biên soạn bài tập cho {{ currentHsk.toUpperCase() }}</span>
+    </button>
   </div>
 
   <!-- Level / HSK Tabs -->
@@ -51,19 +72,41 @@
       [ngClass]="level.id"
       (click)="selectHsk(level.id)">
       <span>{{ level.name }}</span>
-      <span class="lock-indicator" *ngIf="isLevelLocked(level.id)">🔒</span>
+
+      <!-- Nhãn 'Sắp ra mắt' chỉ hiện ở bên học viên nếu chưa có data -->
+      <span class="upcoming-badge" *ngIf="!userService.isTeacher() && !hasLevelData(level.id) && ['hsk4','hsk5','hsk6'].includes(level.id)">
+        Sắp ra mắt
+      </span>
+
+      <!-- Biểu tượng khóa cho học viên chưa duyệt quyền khi đã có data hoặc cấp độ bị khóa -->
+      <span class="lock-indicator" *ngIf="isLevelLocked(level.id) && (!['hsk4','hsk5','hsk6'].includes(level.id) || hasLevelData(level.id))">🔒</span>
     </div>
   </div>
 
-  <!-- Locked Course Alert Modal for Unapproved Students -->
+  <!-- Locked Course Alert Modal for Unapproved Students / Upcoming Levels -->
   <div class="locked-modal-overlay" *ngIf="isLockedModalOpen" (click)="closeLockedModal()">
     <div class="locked-modal-card" (click)="$event.stopPropagation()">
-      <div class="modal-icon">🔒</div>
-      <h3>Cấp độ {{ lockedLevelName }}</h3>
-      <p class="modal-msg">
-        Cấp độ này yêu cầu <strong>Tài khoản được duyệt quyền</strong> từ Giáo viên / Admin để truy cập toàn bộ tài liệu và bài giảng.
-      </p>
-      <p class="modal-sub">Nếu bạn là học viên của trung tâm, vui lòng nhắn tin trực tiếp cho cô Nghiêm Linh qua Zalo 0385780185 để được kích hoạt ngay.</p>
+      <div class="modal-icon">{{ !hasLevelData(currentHsk) && ['hsk4','hsk5','hsk6'].includes(currentHsk) ? '⏳' : '🔒' }}</div>
+      <h3>{{ lockedLevelName }} {{ !hasLevelData(currentHsk) && ['hsk4','hsk5','hsk6'].includes(currentHsk) ? '(Sắp ra mắt)' : '' }}</h3>
+      
+      <!-- Case 1: Level is upcoming (No data yet) -->
+      <ng-container *ngIf="!hasLevelData(currentHsk) && ['hsk4','hsk5','hsk6'].includes(currentHsk); else permissionTemplate">
+        <p class="modal-msg">
+          Cấp độ này đang được đội ngũ giáo viên biên soạn nội dung bài giảng số hóa và hệ thống bài tập thực hành. 
+        </p>
+        <p class="modal-sub">
+          Hệ thống sẽ <strong>tự động mở khóa</strong> ngay khi giáo viên cập nhật xong dữ liệu cho cấp độ này. Bạn có thể xem và tải trước tài liệu ôn tập ở mục bên dưới.
+        </p>
+      </ng-container>
+
+      <!-- Case 2: Requires Admin Approval -->
+      <ng-template #permissionTemplate>
+        <p class="modal-msg">
+          Cấp độ này yêu cầu <strong>Tài khoản được duyệt quyền</strong> từ Giáo viên / Admin để truy cập toàn bộ tài liệu và bài giảng.
+        </p>
+        <p class="modal-sub">Nếu bạn là học viên của trung tâm, vui lòng nhắn tin trực tiếp cho cô Nghiêm Linh qua Zalo 0385780185 để được kích hoạt ngay.</p>
+      </ng-template>
+
       <div class="modal-actions">
         <button class="btn-modal-close" (click)="closeLockedModal()">Đã hiểu</button>
       </div>
@@ -229,6 +272,100 @@
     <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
       <button (click)="closeUploadModal()" style="padding: 9px 18px; border: 1px solid #cbd5e1; background: white; border-radius: 8px; font-weight: 600; color: #475569; cursor: pointer;">Hủy</button>
       <button (click)="saveUploadedMaterial()" style="padding: 9px 18px; background: #0284c7; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Tải lên ngay</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- Admin Add / Edit Lesson & Exercises Modal -->
+<div class="modal-overlay" *ngIf="isAddLessonModalOpen()" (click)="closeAddLessonModal()" style="position: fixed; inset: 0; background: rgba(0,0,0,0.55); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 20px;">
+  <div class="modal-content" (click)="$event.stopPropagation()" style="background: white; border-radius: 20px; width: 100%; max-width: 720px; max-height: 90vh; overflow-y: auto; padding: 28px; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #f1f5f9; padding-bottom: 14px; margin-bottom: 18px;">
+      <div>
+        <h3 style="margin: 0; font-size: 20px; font-weight: 800; color: #0f172a; display: flex; align-items: center; gap: 8px;">
+          <span>✏️</span>
+          <span>Biên soạn Bài học & Bài tập — {{ editingLevel().toUpperCase() }} (Bài {{ editingUnit() }})</span>
+        </h3>
+        <p style="margin: 4px 0 0; font-size: 13px; color: #64748b;">
+          Dữ liệu được lưu sẽ ngay lập tức mở khóa cho học viên và tự động loại bỏ nhãn "Sắp ra mắt".
+        </p>
+      </div>
+      <button (click)="closeAddLessonModal()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b;">✕</button>
+    </div>
+
+    <!-- Toggle Edit Mode: Quick Form vs Full JSON -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #f8fafc; padding: 10px 14px; border-radius: 10px; margin-bottom: 16px;">
+      <div style="display: flex; gap: 8px;">
+        <button type="button" (click)="showJsonEditor.set(false)" [style.background]="!showJsonEditor() ? '#0284c7' : '#e2e8f0'" [style.color]="!showJsonEditor() ? '#fff' : '#475569'" style="border: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;">
+          📝 Soạn theo Mẫu Form
+        </button>
+        <button type="button" (click)="showJsonEditor.set(true)" [style.background]="showJsonEditor() ? '#0284c7' : '#e2e8f0'" [style.color]="showJsonEditor() ? '#fff' : '#475569'" style="border: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;">
+          ⚙️ Nhập mã JSON chi tiết
+        </button>
+      </div>
+
+      <button type="button" (click)="loadDefaultLessonTemplate()" style="background: #ecfdf5; border: 1px solid #a7f3d0; color: #059669; font-weight: 700; padding: 6px 12px; border-radius: 6px; font-size: 12px; cursor: pointer;">
+        ⚡ Tải Mẫu HSK chuẩn có sẵn
+      </button>
+    </div>
+
+    <!-- Level & Unit Selectors -->
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 16px;">
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px;">Cấp độ</label>
+        <select [ngModel]="editingLevel()" (ngModelChange)="editingLevel.set($event)" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px; font-weight: 600;">
+          <option value="hsk4">HSK 4</option>
+          <option value="hsk5">HSK 5</option>
+          <option value="hsk6">HSK 6</option>
+          <option value="hsk1">HSK 1</option>
+          <option value="hsk2">HSK 2</option>
+          <option value="hsk3">HSK 3</option>
+        </select>
+      </div>
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px;">Bài số</label>
+        <input type="number" min="1" max="50" [ngModel]="editingUnit()" (ngModelChange)="editingUnit.set($event)" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+      </div>
+    </div>
+
+    <!-- Form Mode -->
+    <div *ngIf="!showJsonEditor()" style="display: flex; flex-direction: column; gap: 14px;">
+      <div>
+        <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px;">Tên bài học (Chữ Hán) *</label>
+        <input type="text" [ngModel]="lessonHanzi()" (ngModelChange)="lessonHanzi.set($event)" placeholder="Ví dụ: 我们一起去旅游" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px;">Phiên âm Pinyin *</label>
+          <input type="text" [ngModel]="lessonPinyin()" (ngModelChange)="lessonPinyin.set($event)" placeholder="Ví dụ: Wǒmen yìqǐ qù lǚyóu" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+        </div>
+        <div>
+          <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px;">Nghĩa tiếng Việt *</label>
+          <input type="text" [ngModel]="lessonMeaning()" (ngModelChange)="lessonMeaning.set($event)" placeholder="Ví dụ: Chúng ta cùng đi du lịch" style="width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+        </div>
+      </div>
+
+      <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px; padding: 14px;">
+        <h4 style="margin: 0 0 6px 0; font-size: 14px; font-weight: 700; color: #166534;">📦 Hệ thống các phần bài học tự động tích hợp:</h4>
+        <p style="margin: 0; font-size: 12.5px; color: #15803d; line-height: 1.6;">
+          Hệ thống đã tự động liên kết đầy đủ <strong>11 Module học tập</strong>: Khởi động, Từ mới (có nét viết bút thuận HanziWriter & ghi âm chấm điểm), Thẻ nhớ 3D, Ngữ pháp (5 câu bài tập sắp xếp), Hội thoại (có ghi âm chấm điểm), Điền từ vào chỗ trống, Sắp xếp câu, Nối câu, Trắc nghiệm, Luyện nói chuẩn âm điệu và Kiến thức văn hóa.
+        </p>
+      </div>
+    </div>
+
+    <!-- JSON Mode -->
+    <div *ngIf="showJsonEditor()">
+      <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 4px;">Dữ liệu JSON bài học đầy đủ</label>
+      <textarea rows="14" [ngModel]="lessonJsonContent()" (ngModelChange)="lessonJsonContent.set($event)" style="width: 100%; font-family: monospace; font-size: 12px; padding: 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #0f172a; color: #e2e8f0;"></textarea>
+    </div>
+
+    <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
+      <button (click)="closeAddLessonModal()" style="padding: 10px 18px; border: 1px solid #cbd5e1; background: white; border-radius: 8px; font-weight: 600; color: #475569; cursor: pointer;">Hủy</button>
+      <button (click)="saveCustomLesson()" style="padding: 10px 22px; background: #059669; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; box-shadow: 0 2px 6px rgba(5,150,105,0.3);">
+        💾 Lưu & Kích hoạt Bài học
+      </button>
     </div>
 
   </div>

@@ -9,7 +9,9 @@ export interface User {
   avatarUrl: string;
   hskAdvanceApproved?: boolean;
   isGoogleAuth?: boolean;
+  authProvider?: 'google' | 'password';
   password?: string;
+  isDeleted?: boolean;
 }
 
 @Injectable({
@@ -44,15 +46,21 @@ export class UserService {
       const savedUser = localStorage.getItem('nl_auth_user');
       if (savedUser) {
         try {
-          this.currentUser.set(JSON.parse(savedUser));
-          return;
+          const parsed = JSON.parse(savedUser);
+          // Clean up old default student demo account if present
+          if (parsed && parsed.email !== 'student@nghiemlinh.edu.vn') {
+            this.currentUser.set(parsed);
+            return;
+          } else {
+            localStorage.removeItem('nl_auth_user');
+          }
         } catch {
           // ignore parsing error
         }
       }
     }
-    // Default demo login as student
-    this.loginAs('student');
+    // Default: Not logged in (guest state)
+    this.currentUser.set(null);
   }
 
   loginAs(
@@ -95,6 +103,7 @@ export class UserService {
       avatarUrl: defaultAvatar,
       hskAdvanceApproved: hskApproved,
       isGoogleAuth: isGoogleAuth,
+      authProvider: isGoogleAuth ? 'google' : 'password',
       password: storedPassword
     };
 
@@ -213,5 +222,14 @@ export class UserService {
     }
 
     return { success: true, message: 'Đổi mật khẩu thành công!' };
+  }
+
+  resetPasswordByEmail(email: string, newPass: string): boolean {
+    const success = this.studentService.updatePasswordByEmail(email, newPass);
+    const current = this.currentUser();
+    if (current && current.email.toLowerCase() === email.toLowerCase()) {
+      this.setCurrentUser({ ...current, password: newPass });
+    }
+    return success;
   }
 }

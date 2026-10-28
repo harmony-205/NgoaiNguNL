@@ -5,6 +5,8 @@ import { ActivatedRoute, Router } from '@angular/router';
 import { UserService } from '../../../core/services/user.service';
 import { UserProgressService } from '../../../core/services/user-progress.service';
 import { CourseMaterialService, CourseMaterial } from '../../../core/services/course-material.service';
+import { LessonManagementService } from '../../../core/services/lesson-management.service';
+import { LessonData } from '../../lesson/models/lesson.data';
 
 export interface Unit {
   id: number;
@@ -33,6 +35,7 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
   userService = inject(UserService);
   userProgressService = inject(UserProgressService);
   materialService = inject(CourseMaterialService);
+  lessonManagementService = inject(LessonManagementService);
 
   courseId = 'tieng-trung';
   courseTitle = 'Khóa tiếng Trung';
@@ -59,6 +62,16 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
   newMatType = signal<'pdf' | 'doc' | 'mp3' | 'zip' | 'drive'>('pdf');
   newMatUrl = signal('');
   newMatSize = signal('');
+
+  // Admin Add / Edit Lesson Modal State
+  isAddLessonModalOpen = signal(false);
+  editingUnit = signal<number>(1);
+  editingLevel = signal<string>('hsk4');
+  lessonHanzi = signal<string>('');
+  lessonPinyin = signal<string>('');
+  lessonMeaning = signal<string>('');
+  showJsonEditor = signal<boolean>(false);
+  lessonJsonContent = signal<string>('');
 
   constructor(
     private route: ActivatedRoute,
@@ -139,14 +152,26 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
     }
   }
 
+  hasLevelData(levelId: string): boolean {
+    return this.lessonManagementService.hasDataForLevel(levelId);
+  }
+
+  hasUnitData(unitId: number): boolean {
+    return !!this.lessonManagementService.getLesson(this.currentHsk, unitId);
+  }
+
   isLevelLocked(levelId: string): boolean {
     // 1. Teachers/Admins always have FULL ACCESS to all levels!
     if (this.userService.isTeacher()) return false;
 
     // 2. Sơ cấp levels are open to everyone
-    if (['hsk1', 'hsk2', 'hsk3', 'n5', 'on-thi', 'hskk', 'hoc-bong'].includes(levelId)) return false;
+    if (['hsk1', 'hsk2', 'hsk3', 'n5', 'n4', 'n3', 'on-thi', 'hskk', 'hoc-bong'].includes(levelId)) return false;
 
-    // 3. Advanced levels check if student has approval from admin
+    // 3. For HSK 4, 5, 6:
+    // If level doesn't even have data yet: it is locked with "Sắp ra mắt" for students
+    if (!this.lessonManagementService.hasDataForLevel(levelId)) return true;
+
+    // 4. If it has data, check if student has approval from admin
     return !this.userService.hasHskAdvanceAccess();
   }
 
@@ -154,16 +179,16 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
     const level = this.hskLevels.find(l => l.id === hskId);
     if (!level) return;
 
-    if (this.isLevelLocked(hskId)) {
-      this.lockedLevelName = level.name;
-      this.isLockedModalOpen = true;
-      return;
-    }
-
+    // Always update currentHsk and activeTheme so button lights up with active color!
     this.currentHsk = hskId;
     this.activeTheme = level.theme;
     this.activeUnitId = null;
     this.generateUnits(hskId, level.unitCount);
+
+    if (this.isLevelLocked(hskId)) {
+      this.lockedLevelName = level.name;
+      this.isLockedModalOpen = true;
+    }
   }
 
   closeLockedModal() {
@@ -203,6 +228,9 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
   }
 
   getUnitActionText(unit: Unit): string {
+    const hasData = ['hsk1', 'hsk2', 'hsk3'].includes(this.currentHsk) || this.hasUnitData(unit.id);
+    if (!hasData && this.userService.isTeacher()) return '✏️ Soạn bài học & bài tập';
+    if (!hasData) return 'Sắp ra mắt';
     if (unit.completedLessons === 0) return 'Bắt đầu học';
     if (unit.completedLessons < unit.totalLessons) return 'Tiếp tục học';
     return 'Luyện tập lại';
@@ -210,8 +238,9 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
 
   startUnit(event: Event, unit: Unit) {
     event.stopPropagation();
-    // For HSK 1, 2, 3, navigate to interactive lesson
-    if (['hsk1', 'hsk2', 'hsk3'].includes(this.currentHsk)) {
+    const hasLesson = ['hsk1', 'hsk2', 'hsk3'].includes(this.currentHsk) || this.hasUnitData(unit.id);
+    
+    if (hasLesson) {
       this.router.navigate(['/lesson', `${this.currentHsk}-${unit.id}`], {
         queryParams: {
           theme: this.activeTheme,
@@ -219,12 +248,73 @@ export class CourseDetailComponent implements OnInit, OnDestroy {
           unit: unit.id
         }
       });
+    } else if (this.userService.isTeacher()) {
+      // For Admin: open lesson composer directly!
+      this.openAddLessonModal(unit.id);
     } else {
-      // For higher levels or other courses, scroll to or open study materials
-      const element = document.getElementById('materials-section');
-      if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+      // For Student: show upcoming modal
+      this.lockedLevelName = `${this.currentHsk.toUpperCase()} - Bài ${unit.id}`;
+      this.isLockedModalOpen = true;
+    }
+  }
+
+  // --- Admin Add / Edit Lesson Modal Operations ---
+  openAddLessonModal(unitId?: number) {
+    const targetUnit = unitId || 1;
+    this.editingLevel.set(this.currentHsk);
+    this.editingUnit.set(targetUnit);
+
+    const existing = this.lessonManagementService.getLesson(this.currentHsk, targetUnit);
+    if (existing) {
+      this.lessonHanzi.set(existing.lessonName?.hanzi || '');
+      this.lessonPinyin.set(existing.lessonName?.pinyin || '');
+      this.lessonMeaning.set(existing.lessonName?.meaning || '');
+      this.lessonJsonContent.set(JSON.stringify(existing, null, 2));
+    } else {
+      const template = this.lessonManagementService.generateTemplate(this.currentHsk, targetUnit);
+      this.lessonHanzi.set(template.lessonName?.hanzi || '');
+      this.lessonPinyin.set(template.lessonName?.pinyin || '');
+      this.lessonMeaning.set(template.lessonName?.meaning || '');
+      this.lessonJsonContent.set(JSON.stringify(template, null, 2));
+    }
+
+    this.showJsonEditor.set(false);
+    this.isAddLessonModalOpen.set(true);
+  }
+
+  closeAddLessonModal() {
+    this.isAddLessonModalOpen.set(false);
+  }
+
+  loadDefaultLessonTemplate() {
+    const template = this.lessonManagementService.generateTemplate(this.editingLevel(), this.editingUnit());
+    this.lessonHanzi.set(template.lessonName?.hanzi || '');
+    this.lessonPinyin.set(template.lessonName?.pinyin || '');
+    this.lessonMeaning.set(template.lessonName?.meaning || '');
+    this.lessonJsonContent.set(JSON.stringify(template, null, 2));
+  }
+
+  saveCustomLesson() {
+    try {
+      let dataToSave: LessonData;
+      if (this.showJsonEditor()) {
+        dataToSave = JSON.parse(this.lessonJsonContent());
+      } else {
+        const base = this.lessonManagementService.generateTemplate(this.editingLevel(), this.editingUnit());
+        base.lessonName = {
+          hanzi: this.lessonHanzi() || (base.lessonName?.hanzi || ''),
+          pinyin: this.lessonPinyin() || (base.lessonName?.pinyin || ''),
+          meaning: this.lessonMeaning() || (base.lessonName?.meaning || '')
+        };
+        dataToSave = base;
       }
+
+      this.lessonManagementService.saveLesson(this.editingLevel(), this.editingUnit(), dataToSave);
+      alert(`Đã lưu bài học Bài ${this.editingUnit()} cho cấp độ ${this.editingLevel().toUpperCase()} thành công! Nhãn "Sắp ra mắt" của cấp độ này đã được tự động loại bỏ cho học viên.`);
+      this.closeAddLessonModal();
+      this.generateUnits(this.currentHsk, this.units.length);
+    } catch (e: any) {
+      alert('Lỗi định dạng dữ liệu: ' + (e.message || 'Không thể lưu bài học'));
     }
   }
 

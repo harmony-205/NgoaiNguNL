@@ -13,6 +13,9 @@ export interface StudentRecord {
   avatarUrl?: string;
   password?: string;
   isGoogleAuth?: boolean;
+  authProvider?: 'google' | 'password';
+  isDeleted?: boolean;
+  deletedAt?: string;
 }
 
 const DEFAULT_STUDENTS: StudentRecord[] = [
@@ -26,7 +29,25 @@ const DEFAULT_STUDENTS: StudentRecord[] = [
     registeredDate: '2026-10-27',
     hskAdvanceApproved: false,
     status: 'active',
-    password: 'Password123'
+    password: 'Password123',
+    isGoogleAuth: false,
+    authProvider: 'password',
+    isDeleted: false
+  },
+  {
+    id: 'std_viet_google',
+    fullName: 'Dương Quốc Việt (Google)',
+    email: 'vietdq.google@gmail.com',
+    course: 'Tiếng Trung',
+    isInternal: false,
+    classTeacherZalo: 'Đăng nhập Google',
+    registeredDate: '2026-10-28',
+    hskAdvanceApproved: true,
+    status: 'active',
+    isGoogleAuth: true,
+    authProvider: 'google',
+    avatarUrl: 'https://lh3.googleusercontent.com/a/default-user=s96-c',
+    isDeleted: false
   },
   {
     id: 'std_1',
@@ -38,7 +59,10 @@ const DEFAULT_STUDENTS: StudentRecord[] = [
     registeredDate: '2026-10-18',
     hskAdvanceApproved: true,
     status: 'active',
-    password: 'Password123'
+    password: 'Password123',
+    isGoogleAuth: false,
+    authProvider: 'password',
+    isDeleted: false
   },
   {
     id: 'std_2',
@@ -50,7 +74,10 @@ const DEFAULT_STUDENTS: StudentRecord[] = [
     registeredDate: '2026-10-19',
     hskAdvanceApproved: false,
     status: 'pending',
-    password: 'Password123'
+    password: 'Password123',
+    isGoogleAuth: false,
+    authProvider: 'password',
+    isDeleted: false
   },
   {
     id: 'std_3',
@@ -62,7 +89,10 @@ const DEFAULT_STUDENTS: StudentRecord[] = [
     registeredDate: '2026-10-15',
     hskAdvanceApproved: false,
     status: 'active',
-    password: 'Password123'
+    password: 'Password123',
+    isGoogleAuth: false,
+    authProvider: 'password',
+    isDeleted: false
   },
   {
     id: 'std_4',
@@ -74,7 +104,10 @@ const DEFAULT_STUDENTS: StudentRecord[] = [
     registeredDate: '2026-10-20',
     hskAdvanceApproved: true,
     status: 'active',
-    password: 'Password123'
+    password: 'Password123',
+    isGoogleAuth: false,
+    authProvider: 'password',
+    isDeleted: false
   },
   {
     id: 'std_5',
@@ -86,7 +119,10 @@ const DEFAULT_STUDENTS: StudentRecord[] = [
     registeredDate: '2026-10-12',
     hskAdvanceApproved: false,
     status: 'active',
-    password: 'Password123'
+    password: 'Password123',
+    isGoogleAuth: false,
+    authProvider: 'password',
+    isDeleted: false
   },
   {
     id: 'std_6',
@@ -98,7 +134,10 @@ const DEFAULT_STUDENTS: StudentRecord[] = [
     registeredDate: '2026-10-16',
     hskAdvanceApproved: false,
     status: 'active',
-    password: 'Password123'
+    password: 'Password123',
+    isGoogleAuth: false,
+    authProvider: 'password',
+    isDeleted: false
   },
   {
     id: 'std_7',
@@ -110,7 +149,10 @@ const DEFAULT_STUDENTS: StudentRecord[] = [
     registeredDate: '2026-10-21',
     hskAdvanceApproved: false,
     status: 'active',
-    password: 'Password123'
+    password: 'Password123',
+    isGoogleAuth: false,
+    authProvider: 'password',
+    isDeleted: false
   }
 ];
 
@@ -122,9 +164,10 @@ export class StudentManagementService {
 
   students = signal<StudentRecord[]>([]);
 
-  internalCount = computed(() => this.students().filter(s => s.isInternal).length);
-  externalCount = computed(() => this.students().filter(s => !s.isInternal).length);
-  totalCount = computed(() => this.students().length);
+  internalCount = computed(() => this.students().filter(s => s.isInternal && !s.isDeleted).length);
+  externalCount = computed(() => this.students().filter(s => !s.isInternal && !s.isDeleted).length);
+  deletedCount = computed(() => this.students().filter(s => !!s.isDeleted).length);
+  totalCount = computed(() => this.students().filter(s => !s.isDeleted).length);
 
   constructor() {
     this.loadStudents();
@@ -154,22 +197,30 @@ export class StudentManagementService {
       !s.fullName.includes('Giáo viên')
     );
 
-    // Make sure Duong Quoc Viet is included cleanly
-    const hasViet = list.some(s => s.fullName.toLowerCase().includes('dương quốc việt') || s.email === 'duongvietkp2005@gmail.com');
-    if (!hasViet) {
-      list.unshift({
-        id: 'std_viet',
-        fullName: 'Dương Quốc Việt',
-        email: 'duongvietkp2005@gmail.com',
-        course: 'Tiếng Trung',
-        isInternal: false,
-        classTeacherZalo: 'Học viên ngoài TT',
-        registeredDate: '2026-10-27',
-        hskAdvanceApproved: false,
-        status: 'active',
-        password: 'Password123'
-      });
+    // Make sure both Duong Quoc Viet (Password) and Duong Quoc Viet (Google) exist
+    const hasVietPass = list.some(s => s.email.toLowerCase() === 'duongvietkp2005@gmail.com');
+    if (!hasVietPass) {
+      list.unshift({ ...DEFAULT_STUDENTS[0] });
+    } else {
+      const idx = list.findIndex(s => s.email.toLowerCase() === 'duongvietkp2005@gmail.com');
+      if (idx !== -1) {
+        list[idx].isGoogleAuth = false;
+        list[idx].authProvider = 'password';
+        if (list[idx].isDeleted === undefined) list[idx].isDeleted = false;
+      }
     }
+
+    const hasVietGoogle = list.some(s => s.email.toLowerCase() === 'vietdq.google@gmail.com');
+    if (!hasVietGoogle) {
+      list.splice(1, 0, { ...DEFAULT_STUDENTS[1] });
+    }
+
+    // Default missing properties for all records
+    list = list.map(s => ({
+      ...s,
+      isDeleted: !!s.isDeleted,
+      authProvider: s.authProvider || (s.isGoogleAuth ? 'google' : 'password')
+    }));
 
     this.students.set(list);
     this.saveToStorage(list);
@@ -189,13 +240,47 @@ export class StudentManagementService {
 
     const newStudent: StudentRecord = {
       ...studentData,
-      id: 'std_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6)
+      id: 'std_' + Date.now() + '_' + Math.random().toString(36).substring(2, 6),
+      isDeleted: false,
+      authProvider: studentData.authProvider || (studentData.isGoogleAuth ? 'google' : 'password')
     };
 
     const currentList = [newStudent, ...this.students()];
     this.students.set(currentList);
     this.saveToStorage(currentList);
     return newStudent;
+  }
+
+  softDeleteStudent(studentId: string): void {
+    const updated = this.students().map(s => {
+      if (s.id === studentId) {
+        return {
+          ...s,
+          isDeleted: true,
+          status: 'locked' as const,
+          deletedAt: new Date().toISOString()
+        };
+      }
+      return s;
+    });
+    this.students.set(updated);
+    this.saveToStorage(updated);
+  }
+
+  restoreStudent(studentId: string): void {
+    const updated = this.students().map(s => {
+      if (s.id === studentId) {
+        return {
+          ...s,
+          isDeleted: false,
+          status: 'active' as const,
+          deletedAt: undefined
+        };
+      }
+      return s;
+    });
+    this.students.set(updated);
+    this.saveToStorage(updated);
   }
 
   updateStudent(id: string, updates: Partial<StudentRecord>) {
@@ -233,6 +318,12 @@ export class StudentManagementService {
     this.students.set(updated);
     this.saveToStorage(updated);
     return true;
+  }
+
+  updatePasswordByEmail(email: string, newPass: string): boolean {
+    const student = this.findByEmail(email);
+    if (!student) return false;
+    return this.resetPassword(student.id, newPass);
   }
 
   findByEmail(email: string): StudentRecord | undefined {

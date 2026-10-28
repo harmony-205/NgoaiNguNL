@@ -73,25 +73,46 @@
         <button class="tab-btn" [class.active]="activeTab === 'materials'" (click)="activeTab = 'materials'">
           📂 Quản lý Tài liệu học tập ({{ materialsCount }})
         </button>
+        <button class="tab-btn" [class.active]="activeTab === 'curriculum'" (click)="activeTab = 'curriculum'">
+          📚 Biên soạn Giáo trình & Bài tập HSK ({{ totalCustomLessonsCount }})
+        </button>
       </div>
 
       <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
-        <div class="search-box">
+        <div class="search-box" *ngIf="activeTab !== 'curriculum'">
           <span class="search-icon">🔍</span>
           <input type="text" [(ngModel)]="searchQuery" [placeholder]="activeTab === 'materials' ? 'Tìm tài liệu, cấp độ, đề thi...' : 'Tìm theo tên, email, lớp...'" />
         </div>
 
-        <button *ngIf="activeTab !== 'materials'" class="btn-export-csv" (click)="exportCSV()" style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(5,150,105,0.25);">
+        <button *ngIf="activeTab === 'internal' || activeTab === 'external'" class="btn-export-csv" (click)="exportCSV()" style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: #059669; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(5,150,105,0.25);">
           <span>📥 Xuất CSV (Excel)</span>
         </button>
 
         <button *ngIf="activeTab === 'materials'" class="btn-export-csv" (click)="openAddMaterialModal()" style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: #2563eb; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(37,99,235,0.25);">
           <span>➕ Tải lên tài liệu mới</span>
         </button>
+
+        <button *ngIf="activeTab === 'curriculum'" class="btn-export-csv" (click)="openCurriculumEditor()" style="display: inline-flex; align-items: center; gap: 6px; padding: 9px 16px; background: #7c3aed; color: white; border: none; border-radius: 10px; font-weight: 700; font-size: 13px; cursor: pointer; white-space: nowrap; box-shadow: 0 2px 6px rgba(124,58,237,0.25);">
+          <span>➕ Soạn bài mới cho {{ selectedCurriculumLevel().toUpperCase() }}</span>
+        </button>
       </div>
     </div>
 
-    <!-- Table 1: Học viên tại Trung tâm -->
+    <!-- Sub-filter cho trạng thái tài khoản: Tất cả / Đang hoạt động / Đã xóa -->
+    <div class="account-status-filters" *ngIf="activeTab === 'internal' || activeTab === 'external'" style="display: flex; gap: 8px; margin: 12px 0 16px; align-items: center; flex-wrap: wrap;">
+      <span style="font-size: 13px; font-weight: 700; color: #64748b; margin-right: 4px;">Trạng thái tài khoản:</span>
+      <button type="button" class="status-chip-btn" [class.active]="accountStatusFilter() === 'all'" (click)="accountStatusFilter.set('all')">
+        Tất cả ({{ activeTab === 'internal' ? (internalActiveCount + internalDeletedCount) : (externalActiveCount + externalDeletedCount) }})
+      </button>
+      <button type="button" class="status-chip-btn active-chip" [class.active]="accountStatusFilter() === 'active'" (click)="accountStatusFilter.set('active')">
+        ✅ Đang hoạt động ({{ activeTab === 'internal' ? internalActiveCount : externalActiveCount }})
+      </button>
+      <button type="button" class="status-chip-btn deleted-chip" [class.active]="accountStatusFilter() === 'deleted'" (click)="accountStatusFilter.set('deleted')">
+        🗑️ Đã xóa / Khóa ({{ activeTab === 'internal' ? internalDeletedCount : externalDeletedCount }})
+      </button>
+    </div>
+
+    <!-- Table 1: Học viên tại Trung tâm (Khớp hoàn toàn bố cục chuẩn gọn gàng như Bảng 2) -->
     <div class="table-responsive" *ngIf="activeTab === 'internal'">
       <table class="data-table">
         <thead>
@@ -99,46 +120,75 @@
             <th>STT</th>
             <th>Họ và tên</th>
             <th>Email</th>
-            <th>Khóa học</th>
-            <th>Lớp/Khóa + GV (Nhóm Zalo)</th>
-            <th>Ngày đăng ký</th>
-            <th>Quyền HSK 4-6</th>
+            <th>Phương thức ĐK</th>
+            <th>Khóa đăng ký</th>
+            <th>Ngày tham gia</th>
+            <th>Lớp / GV Zalo</th>
+            <th>Trạng thái</th>
             <th>Thao tác</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let student of internalStudents; let i = index">
+          <tr *ngFor="let student of internalStudents; let i = index" [class.row-deleted]="student.isDeleted">
             <td>{{ i + 1 }}</td>
-            <td class="font-bold">{{ student.fullName }}</td>
+            <td class="font-bold">
+              <span [style.text-decoration]="student.isDeleted ? 'line-through' : 'none'" [style.color]="student.isDeleted ? '#94a3b8' : '#1e293b'">
+                {{ student.fullName }}
+              </span>
+            </td>
             <td>{{ student.email }}</td>
             <td>
-              <span class="course-tag">{{ student.course }}</span>
-            </td>
-            <td class="zalo-class-cell">
-              <span class="zalo-icon">💬</span>
-              <strong>{{ student.classTeacherZalo }}</strong>
-            </td>
-            <td>{{ student.registeredDate }}</td>
-            <td>
-              <span class="status-badge" [class.approved]="student.hskAdvanceApproved" [class.pending]="!student.hskAdvanceApproved">
-                {{ student.hskAdvanceApproved ? 'Đã duyệt HSK 4-6' : 'Chưa duyệt' }}
+              <span *ngIf="student.isGoogleAuth || student.authProvider === 'google'" class="auth-type-pill google-pill" title="Tài khoản đăng ký & xác thực qua Google OAuth">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 14px; height: 14px;" />
+                <span>Google</span>
+              </span>
+              <span *ngIf="!student.isGoogleAuth && student.authProvider !== 'google'" class="auth-type-pill password-pill" title="Tài khoản đăng ký qua Gmail & Mật khẩu">
+                <span>🔑 Gmail / MK</span>
               </span>
             </td>
             <td>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <button class="btn-toggle-hsk" 
-                  [class.btn-revoke]="student.hskAdvanceApproved" 
-                  (click)="toggleHskApproval(student)">
-                  {{ student.hskAdvanceApproved ? 'Khóa HSK 4-6' : 'Duyệt mở khóa' }}
+              <span class="course-tag">{{ student.course }}</span>
+            </td>
+            <td>{{ student.registeredDate }}</td>
+            <td>
+              <div class="zalo-class-cell">
+                <span class="zalo-icon">💬</span>
+                <strong>{{ student.classTeacherZalo }}</strong>
+              </div>
+            </td>
+            <td>
+              <span class="status-badge" [class.deleted-badge]="student.isDeleted" [class.active-badge]="!student.isDeleted">
+                {{ student.isDeleted ? '🗑️ Đã xóa' : 'Đang hoạt động' }}
+              </span>
+            </td>
+            <td>
+              <div class="actions-stack">
+                <!-- Nếu tài khoản đã xóa -> Nút Khôi phục -->
+                <button *ngIf="student.isDeleted" class="btn-restore-student" (click)="restoreStudent(student)" title="Khôi phục tài khoản hoạt động trở lại">
+                  🔄 Khôi phục
                 </button>
-                <button class="btn-reset-pw" style="padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;" (click)="resetPassword(student)" title="Đặt lại mật khẩu">
-                  🔑 Đặt lại MK
-                </button>
+
+                <!-- Nếu tài khoản chưa xóa -> 3 nút xếp dọc gọn gàng theo cột -->
+                <ng-container *ngIf="!student.isDeleted">
+                  <button class="btn-toggle-hsk" 
+                    [class.btn-revoke]="student.hskAdvanceApproved" 
+                    (click)="toggleHskApproval(student)">
+                    {{ student.hskAdvanceApproved ? 'Khóa HSK 4-6' : 'Duyệt mở khóa' }}
+                  </button>
+
+                  <button *ngIf="!student.isGoogleAuth" class="btn-reset-pw" (click)="resetPassword(student)" title="Đặt lại mật khẩu">
+                    🔑 Đặt lại MK
+                  </button>
+
+                  <button class="btn-delete-student" (click)="deleteStudent(student)" title="Xóa tài khoản này (chuyển sang trạng thái Đã xóa)">
+                    🗑️ Xóa
+                  </button>
+                </ng-container>
               </div>
             </td>
           </tr>
           <tr *ngIf="internalStudents.length === 0">
-            <td colspan="8" class="empty-cell">Không tìm thấy học viên nào phù hợp.</td>
+            <td colspan="9" class="empty-cell">Không tìm thấy học viên nào phù hợp.</td>
           </tr>
         </tbody>
       </table>
@@ -152,18 +202,32 @@
             <th>STT</th>
             <th>Họ và tên</th>
             <th>Email</th>
+            <th>Phương thức ĐK</th>
             <th>Khóa đăng ký</th>
             <th>Ngày tham gia</th>
             <th>Phân loại</th>
-            <th>Trạng thái tài khoản</th>
+            <th>Trạng thái</th>
             <th>Thao tác</th>
           </tr>
         </thead>
         <tbody>
-          <tr *ngFor="let student of externalStudents; let i = index">
+          <tr *ngFor="let student of externalStudents; let i = index" [class.row-deleted]="student.isDeleted">
             <td>{{ i + 1 }}</td>
-            <td class="font-bold">{{ student.fullName }}</td>
+            <td class="font-bold">
+              <span [style.text-decoration]="student.isDeleted ? 'line-through' : 'none'" [style.color]="student.isDeleted ? '#94a3b8' : '#1e293b'">
+                {{ student.fullName }}
+              </span>
+            </td>
             <td>{{ student.email }}</td>
+            <td>
+              <span *ngIf="student.isGoogleAuth || student.authProvider === 'google'" class="auth-type-pill google-pill" title="Tài khoản đăng ký & xác thực qua Google OAuth">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" alt="Google" style="width: 14px; height: 14px;" />
+                <span>Google</span>
+              </span>
+              <span *ngIf="!student.isGoogleAuth && student.authProvider !== 'google'" class="auth-type-pill password-pill" title="Tài khoản đăng ký qua Gmail & Mật khẩu">
+                <span>🔑 Gmail / MK</span>
+              </span>
+            </td>
             <td>
               <span class="course-tag">{{ student.course }}</span>
             </td>
@@ -172,23 +236,38 @@
               <span class="type-pill">Học viên ngoài TT</span>
             </td>
             <td>
-              <span class="status-badge active-badge">Đang hoạt động</span>
+              <span class="status-badge" [class.deleted-badge]="student.isDeleted" [class.active-badge]="!student.isDeleted">
+                {{ student.isDeleted ? '🗑️ Đã xóa' : 'Đang hoạt động' }}
+              </span>
             </td>
             <td>
-              <div style="display: flex; gap: 6px; align-items: center;">
-                <button class="btn-toggle-hsk" 
-                  [class.btn-revoke]="student.hskAdvanceApproved" 
-                  (click)="toggleHskApproval(student)">
-                  {{ student.hskAdvanceApproved ? 'Khóa HSK 4-6' : 'Duyệt mở khóa' }}
+              <div class="actions-stack">
+                <!-- Nếu tài khoản đã xóa -> Nút Khôi phục -->
+                <button *ngIf="student.isDeleted" class="btn-restore-student" (click)="restoreStudent(student)" title="Khôi phục tài khoản hoạt động trở lại">
+                  🔄 Khôi phục
                 </button>
-                <button class="btn-reset-pw" style="padding: 6px 10px; background: #f8fafc; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; font-weight: 600; color: #475569; cursor: pointer;" (click)="resetPassword(student)" title="Đặt lại mật khẩu">
-                  🔑 Đặt lại MK
-                </button>
+
+                <!-- Nếu tài khoản chưa xóa -> 3 nút xếp dọc gọn gàng theo cột -->
+                <ng-container *ngIf="!student.isDeleted">
+                  <button class="btn-toggle-hsk" 
+                    [class.btn-revoke]="student.hskAdvanceApproved" 
+                    (click)="toggleHskApproval(student)">
+                    {{ student.hskAdvanceApproved ? 'Khóa HSK 4-6' : 'Duyệt mở khóa' }}
+                  </button>
+
+                  <button *ngIf="!student.isGoogleAuth" class="btn-reset-pw" (click)="resetPassword(student)" title="Đặt lại mật khẩu">
+                    🔑 Đặt lại MK
+                  </button>
+
+                  <button class="btn-delete-student" (click)="deleteStudent(student)" title="Xóa tài khoản này (chuyển sang trạng thái Đã xóa)">
+                    🗑️ Xóa
+                  </button>
+                </ng-container>
               </div>
             </td>
           </tr>
           <tr *ngIf="externalStudents.length === 0">
-            <td colspan="8" class="empty-cell">Không tìm thấy học viên nào phù hợp.</td>
+            <td colspan="9" class="empty-cell">Không tìm thấy học viên nào phù hợp.</td>
           </tr>
         </tbody>
       </table>
@@ -247,6 +326,114 @@
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Tab 4: Quản lý Giáo trình & Biên soạn Bài tập HSK 1 - 6 -->
+    <div *ngIf="activeTab === 'curriculum'" style="padding: 24px;">
+      <!-- HSK Level Selector Pills -->
+      <div style="display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;">
+        <button *ngFor="let lvl of curriculumLevels"
+          (click)="selectCurriculumLevel(lvl.id)"
+          [style.background]="selectedCurriculumLevel() === lvl.id ? lvl.color : '#f1f5f9'"
+          [style.color]="selectedCurriculumLevel() === lvl.id ? '#ffffff' : '#475569'"
+          [style.borderColor]="selectedCurriculumLevel() === lvl.id ? lvl.color : '#cbd5e1'"
+          style="display: flex; align-items: center; gap: 8px; padding: 10px 20px; border-radius: 12px; border: 2px solid; font-weight: 800; font-size: 15px; cursor: pointer; transition: all 0.2s;">
+          <span>{{ lvl.name }}</span>
+          <span *ngIf="hasLevelData(lvl.id)" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(255,255,255,0.25); color: inherit;">
+            ✓ Đã có dữ liệu
+          </span>
+          <span *ngIf="!hasLevelData(lvl.id)" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: rgba(0,0,0,0.1); color: inherit;">
+            ⏳ Sắp ra mắt (Học viên)
+          </span>
+        </button>
+      </div>
+
+      <!-- Business Note Banner -->
+      <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-left: 5px solid #7c3aed; border-radius: 12px; padding: 14px 18px; margin-bottom: 24px; font-size: 13.5px; color: #334155; line-height: 1.6;">
+        <strong style="color: #7c3aed;">📌 Quy tắc hệ thống:</strong>
+        Đối với các cấp độ <strong>HSK 4, HSK 5, HSK 6</strong>, khi chưa có dữ liệu giáo trình/bài tập, phía học viên sẽ hiển thị nhãn <span style="background: #ffedd5; color: #c2410c; padding: 2px 6px; border-radius: 4px; font-weight: 700; font-size: 12px;">Sắp ra mắt</span>.
+        Ngay khi giáo viên thêm bất kỳ bài học nào cho cấp độ này, nhãn <strong>"Sắp ra mắt" sẽ tự động được gỡ bỏ</strong> trên giao diện học viên!
+      </div>
+
+      <!-- Units Table for the selected level -->
+      <div class="table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 70px;">Bài số</th>
+              <th>Tên bài học</th>
+              <th>Từ vựng & Hội thoại</th>
+              <th>Bài tập thực hành</th>
+              <th>Trạng thái</th>
+              <th style="text-align: right;">Thao tác biên soạn</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let item of currentLevelUnits">
+              <td style="font-weight: 800; text-align: center; color: #1e293b;">
+                Bài {{ item.unit }}
+              </td>
+              <td>
+                <div style="font-weight: 700; color: #0f172a; font-size: 14px;">
+                  {{ item.hanzi || ('Bài ' + item.unit) }}
+                </div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 2px;">
+                  <span *ngIf="item.pinyin" style="color: #7c3aed; font-weight: 600;">{{ item.pinyin }}</span>
+                  <span *ngIf="item.pinyin && item.title"> • </span>
+                  <span>{{ item.title }}</span>
+                </div>
+              </td>
+              <td>
+                <span *ngIf="item.hasData" style="font-size: 12px; color: #334155; font-weight: 600;">
+                  📖 {{ item.vocabCount }} từ vựng
+                </span>
+                <span *ngIf="!item.hasData" style="color: #94a3b8; font-size: 12px;">---</span>
+              </td>
+              <td>
+                <div *ngIf="item.hasData" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <span *ngIf="item.quizCount > 0" style="padding: 2px 6px; background: #eff6ff; color: #1d4ed8; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                    Trắc nghiệm ({{ item.quizCount }})
+                  </span>
+                  <span *ngIf="item.hasSentenceOrder" style="padding: 2px 6px; background: #ecfdf5; color: #059669; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                    Sắp xếp câu
+                  </span>
+                  <span *ngIf="item.hasMatching" style="padding: 2px 6px; background: #faf5ff; color: #7e22ce; border-radius: 4px; font-size: 11px; font-weight: 600;">
+                    Nối từ
+                  </span>
+                </div>
+                <span *ngIf="!item.hasData" style="color: #94a3b8; font-size: 12px;">Chưa có bài tập</span>
+              </td>
+              <td>
+                <span *ngIf="item.isCustom" style="padding: 4px 8px; border-radius: 6px; background: #dcfce7; color: #166534; font-weight: 700; font-size: 12px;">
+                  Admin đã soạn
+                </span>
+                <span *ngIf="!item.isCustom && item.hasData" style="padding: 4px 8px; border-radius: 6px; background: #e0e7ff; color: #3730a3; font-weight: 700; font-size: 12px;">
+                  Hệ thống chuẩn
+                </span>
+                <span *ngIf="!item.hasData" style="padding: 4px 8px; border-radius: 6px; background: #fef3c7; color: #b45309; font-weight: 700; font-size: 12px;">
+                  Chưa có dữ liệu
+                </span>
+              </td>
+              <td style="text-align: right;">
+                <div style="display: inline-flex; gap: 8px;">
+                  <button (click)="openCurriculumEditor(item.unit)"
+                    style="padding: 6px 12px; background: #7c3aed; color: white; border: none; border-radius: 6px; font-weight: 700; font-size: 12px; cursor: pointer;">
+                    ✏️ Soạn bài tập
+                  </button>
+                  <button *ngIf="item.hasData" (click)="previewLesson(item.unit)"
+                    style="padding: 6px 10px; background: #f1f5f9; color: #334155; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer;">
+                    👁️ Thử bài
+                  </button>
+                  <button *ngIf="item.isCustom" (click)="deleteCurriculumLesson(item.unit)"
+                    style="padding: 6px 10px; background: #fee2e2; color: #b91c1c; border: 1px solid #fecaca; border-radius: 6px; font-weight: 600; font-size: 12px; cursor: pointer;">
+                    🗑️
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -322,6 +509,109 @@
     <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; border-top: 1px solid #e2e8f0; padding-top: 16px;">
       <button (click)="closeAddMaterialModal()" style="padding: 9px 18px; border: 1px solid #cbd5e1; background: white; border-radius: 8px; font-weight: 600; color: #475569; cursor: pointer;">Hủy</button>
       <button (click)="saveNewMaterial()" style="padding: 9px 18px; background: #2563eb; color: white; border: none; border-radius: 8px; font-weight: 700; cursor: pointer;">Lưu & Tải lên</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Soạn Giáo trình & Bài tập cho Admin -->
+<div class="modal-overlay" *ngIf="isLessonEditorModalOpen()" (click)="closeCurriculumEditor()" style="position: fixed; inset: 0; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); display: flex; align-items: center; justify-content: center; z-index: 99999; padding: 20px;">
+  <div class="modal-content" (click)="$event.stopPropagation()" style="background: white; border-radius: 16px; width: 100%; max-width: 840px; max-height: 90vh; display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgba(0,0,0,0.25);">
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 18px 24px; border-bottom: 1px solid #e2e8f0; background: #f8fafc;">
+      <div>
+        <h3 style="margin: 0; font-size: 18px; font-weight: 800; color: #1e293b;">
+          ✏️ Biên soạn Giáo trình & Bài tập: {{ selectedCurriculumLevel().toUpperCase() }} - Bài {{ selectedCurriculumUnit() }}
+        </h3>
+        <p style="margin: 4px 0 0; font-size: 12.5px; color: #64748b;">
+          Dữ liệu lưu lại sẽ lập tức được cập nhật vào chương trình học và tự động gỡ bỏ nhãn "Sắp ra mắt" cho học viên.
+        </p>
+      </div>
+      <button (click)="closeCurriculumEditor()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #64748b;">✕</button>
+    </div>
+
+    <!-- Mode Selector & Quick Actions -->
+    <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 24px; background: #fff; border-bottom: 1px solid #e2e8f0;">
+      <div style="display: flex; gap: 8px;">
+        <button (click)="editorMode.set('form')"
+          [style.background]="editorMode() === 'form' ? '#7c3aed' : '#f1f5f9'"
+          [style.color]="editorMode() === 'form' ? '#fff' : '#475569'"
+          style="padding: 6px 14px; border-radius: 8px; border: none; font-weight: 700; font-size: 13px; cursor: pointer;">
+          📝 Giao diện Trực quan
+        </button>
+        <button (click)="editorMode.set('json')"
+          [style.background]="editorMode() === 'json' ? '#7c3aed' : '#f1f5f9'"
+          [style.color]="editorMode() === 'json' ? '#fff' : '#475569'"
+          style="padding: 6px 14px; border-radius: 8px; border: none; font-weight: 700; font-size: 13px; cursor: pointer;">
+          ⚡ JSON / Mã nguồn nâng cao
+        </button>
+      </div>
+
+      <button (click)="loadCurriculumTemplate()" style="padding: 6px 12px; background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; border-radius: 8px; font-weight: 600; font-size: 12px; cursor: pointer;">
+        ✨ Tải mẫu bài học & bài tập chuẩn
+      </button>
+    </div>
+
+    <!-- Modal Body -->
+    <div style="padding: 20px 24px; overflow-y: auto; flex: 1;">
+      <!-- Form Mode -->
+      <div *ngIf="editorMode() === 'form'">
+        <div style="margin-bottom: 16px;">
+          <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+            Tên bài học (Chữ Hán)
+          </label>
+          <input type="text" [ngModel]="lessonHanzi()" (ngModelChange)="lessonHanzi.set($event)"
+            placeholder="Ví dụ: 第四课 去旅游 (Bài 4 Đi du lịch)"
+            style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+          <div>
+            <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+              Phiên âm (Pinyin)
+            </label>
+            <input type="text" [ngModel]="lessonPinyin()" (ngModelChange)="lessonPinyin.set($event)"
+              placeholder="Ví dụ: Dì sì kè Qù lǚyóu"
+              style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+          </div>
+          <div>
+            <label style="display: block; font-size: 13px; font-weight: 700; color: #334155; margin-bottom: 6px;">
+              Nghĩa tiếng Việt
+            </label>
+            <input type="text" [ngModel]="lessonMeaning()" (ngModelChange)="lessonMeaning.set($event)"
+              placeholder="Ví dụ: Bài 4: Đi du lịch"
+              style="width: 100%; padding: 10px 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; font-size: 14px;" />
+          </div>
+        </div>
+
+        <div style="background: #faf5ff; border: 1px dashed #c084fc; border-radius: 10px; padding: 14px; margin-bottom: 16px;">
+          <div style="font-weight: 700; color: #6b21a8; font-size: 13px; margin-bottom: 4px;">
+            🎯 Cấu trúc bài học & bài tập đi kèm:
+          </div>
+          <div style="font-size: 12.5px; color: #7e22ce; line-height: 1.5;">
+            Khi lưu ở chế độ này, bài học sẽ tự động được khởi tạo đầy đủ các phần: <strong>Từ vựng tương tác</strong>, <strong>Hội thoại nghe phát âm chuẩn</strong>, <strong>Bài tập Sắp xếp câu</strong>, <strong>Bài tập Nối từ</strong> và <strong>Trắc nghiệm Quiz</strong>. Bạn có thể bấm nút <em>"JSON / Mã nguồn nâng cao"</em> ở trên để sửa từng câu hỏi cụ thể theo đề bài của bạn!
+          </div>
+        </div>
+      </div>
+
+      <!-- JSON Mode -->
+      <div *ngIf="editorMode() === 'json'">
+        <div style="margin-bottom: 8px; font-size: 12.5px; color: #64748b;">
+          Dán hoặc chỉnh sửa mã cấu trúc bài tập (JSON). Bao gồm các trường: <code>vocabulary</code>, <code>dialogues</code>, <code>sentenceOrder</code>, <code>matching</code>, <code>quiz</code>.
+        </div>
+        <textarea [ngModel]="lessonJsonContent()" (ngModelChange)="lessonJsonContent.set($event)"
+          rows="18"
+          style="width: 100%; padding: 12px; font-family: 'Consolas', 'Fira Code', monospace; font-size: 13px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #0f172a; color: #f8fafc; line-height: 1.5; resize: vertical;">
+        </textarea>
+      </div>
+    </div>
+
+    <!-- Modal Footer -->
+    <div style="display: flex; justify-content: flex-end; gap: 12px; padding: 16px 24px; border-top: 1px solid #e2e8f0; background: #f8fafc;">
+      <button (click)="closeCurriculumEditor()" style="padding: 9px 18px; border: 1px solid #cbd5e1; background: white; border-radius: 8px; font-weight: 600; font-size: 13px; cursor: pointer; color: #475569;">
+        Hủy bỏ
+      </button>
+      <button (click)="saveCurriculumLesson()" style="padding: 9px 22px; background: #7c3aed; color: white; border: none; border-radius: 8px; font-weight: 700; font-size: 13px; cursor: pointer; box-shadow: 0 2px 6px rgba(124,58,237,0.3);">
+        💾 Lưu bài học & Tự động mở khóa
+      </button>
     </div>
   </div>
 </div>

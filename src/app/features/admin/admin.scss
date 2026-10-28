@@ -209,6 +209,43 @@
     }
   }
 
+  .account-status-filters {
+    .status-chip-btn {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1.5px solid #E2E8F0;
+      background: #fff;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: #64748B;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        border-color: #CBD5E1;
+        background: #F8FAFC;
+      }
+
+      &.active {
+        background: #1E293B;
+        color: #fff;
+        border-color: #1E293B;
+      }
+
+      &.active-chip.active {
+        background: #059669;
+        color: #fff;
+        border-color: #059669;
+      }
+
+      &.deleted-chip.active {
+        background: #DC2626;
+        color: #fff;
+        border-color: #DC2626;
+      }
+    }
+  }
+
   .table-responsive {
     overflow-x: auto;
   }
@@ -223,13 +260,13 @@
       background: #F8FAFC;
       color: #64748B;
       font-weight: 800;
-      padding: 14px 18px;
+      padding: 12px 10px;
       border-bottom: 2px solid #E2E8F0;
       white-space: nowrap;
     }
 
     td {
-      padding: 16px 18px;
+      padding: 10px 10px;
       border-bottom: 1px solid #EDF2F7;
       color: #334155;
       vertical-align: middle;
@@ -237,6 +274,10 @@
       &.font-bold {
         font-weight: 700;
         color: #1E293B;
+        white-space: normal;
+        min-width: 105px;
+        max-width: 135px;
+        line-height: 1.35;
       }
     }
 
@@ -251,15 +292,68 @@
       font-size: 12px;
       padding: 4px 10px;
       border-radius: 999px;
+      display: inline-block;
+      white-space: nowrap;
     }
 
     .zalo-class-cell {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
+      white-space: nowrap;
 
       .zalo-icon {
         font-size: 16px;
+      }
+    }
+
+    .actions-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      width: 108px;
+
+      button {
+        width: 100%;
+        padding: 5px 8px;
+        text-align: center;
+        box-sizing: border-box;
+        font-size: 11.5px;
+        border-radius: 6px;
+        font-weight: 700;
+        cursor: pointer;
+        display: block;
+        white-space: nowrap;
+        transition: all 0.2s;
+      }
+
+      .btn-toggle-hsk {
+        margin: 0;
+      }
+
+      .btn-reset-pw {
+        padding: 5px 8px;
+        background: #f8fafc;
+        border: 1px solid #cbd5e1;
+        color: #475569;
+        font-size: 11.5px;
+
+        &:hover {
+          background: #f1f5f9;
+          border-color: #94a3b8;
+        }
+      }
+
+      .btn-delete-student {
+        margin: 0;
+        padding: 5px 8px;
+        font-size: 11.5px;
+      }
+
+      .btn-restore-student {
+        margin: 0;
+        padding: 6px 8px;
+        font-size: 11.5px;
       }
     }
 
@@ -283,6 +377,76 @@
       &.active-badge {
         background: #E0E7FF;
         color: #3730A3;
+      }
+
+      &.deleted-badge {
+        background: #FEE2E2;
+        color: #991B1B;
+      }
+    }
+
+    .auth-type-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 11.5px;
+      font-weight: 700;
+      white-space: nowrap;
+
+      &.google-pill {
+        background: #EFF6FF;
+        color: #1D4ED8;
+        border: 1px solid #BFDBFE;
+      }
+
+      &.password-pill {
+        background: #FEF3C7;
+        color: #B45309;
+        border: 1px solid #FDE68A;
+      }
+    }
+
+    .row-deleted {
+      background-color: #fef2f2 !important;
+
+      &:hover {
+        background-color: #fee2e2 !important;
+      }
+    }
+
+    .btn-delete-student {
+      padding: 6px 10px;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #e11d48;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #e11d48;
+        color: white;
+      }
+    }
+
+    .btn-restore-student {
+      padding: 6px 12px;
+      background: #ecfdf5;
+      border: 1px solid #a7f3d0;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #059669;
+      cursor: pointer;
+      transition: all 0.2s;
+
+      &:hover {
+        background: #059669;
+        color: white;
       }
     }
 
