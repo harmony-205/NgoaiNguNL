@@ -661,11 +661,6 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
           return;
         }
 
-        if (student && !student.isGoogleAuth && student.authProvider === 'password') {
-          alert(`Email "${email}" đã được đăng ký bằng Gmail & Mật khẩu thông thường.\n\nVui lòng đăng nhập qua biểu mẫu Gmail và Mật khẩu!`);
-          return;
-        }
-
         if (!student) {
           student = this.studentService.addStudent({
             fullName: name,
@@ -683,7 +678,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
           });
         }
 
-        this.userService.loginAs('student', student.fullName, student.email, true);
+        this.userService.loginAs('student', student.fullName, student.email, true, student.password);
         this.router.navigate(['/course/tieng-trung']);
         return;
       } catch (e) {
@@ -706,11 +701,6 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (student && !student.isGoogleAuth && student.authProvider === 'password') {
-      alert(`Email "${targetEmail}" đã được đăng ký bằng hình thức Gmail & Mật khẩu thông thường.\n\nVui lòng sử dụng biểu mẫu Đăng nhập bằng Gmail và Mật khẩu!`);
-      return;
-    }
-
     if (!student) {
       student = this.studentService.addStudent({
         fullName: targetName,
@@ -728,7 +718,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       });
     }
 
-    this.userService.loginAs('student', student.fullName, student.email, true);
+    this.userService.loginAs('student', student.fullName, student.email, true, student.password);
     this.isGoogleModalOpen = false;
     this.router.navigate(['/course/tieng-trung']);
   }

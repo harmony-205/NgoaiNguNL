@@ -103,7 +103,7 @@ const DEFAULT_TEACHER_PROFILE: TeacherProfile = {
       note: 'Học bổng toàn phần Chính phủ Trung Quốc (2022)'
     },
     {
-      school: 'Đại học Ký Nam (Quảng Châu)',
+      school: 'Đại học Ký Nam (Thế Ninh)',
       major: 'Chuyên ngành Giáo dục Hán ngữ Quốc tế',
       note: 'Học bổng toàn phần Giáo viên tiếng Trung (2022)'
     },

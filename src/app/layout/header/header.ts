@@ -1,6 +1,7 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, NavigationEnd } from '@angular/router';
+import { Subscription, filter } from 'rxjs';
 import { UserService } from '../../core/services/user.service';
 
 @Component({
@@ -10,12 +11,28 @@ import { UserService } from '../../core/services/user.service';
   templateUrl: './header.html',
   styleUrl: './header.scss',
 })
-export class HeaderComponent {
+export class HeaderComponent implements OnInit, OnDestroy {
   userService = inject(UserService);
   router = inject(Router);
+  cdr = inject(ChangeDetectorRef);
   
   isMenuOpen = false;
   isUserMenuOpen = false;
+  private navSub?: Subscription;
+
+  ngOnInit() {
+    this.navSub = this.router.events.pipe(
+      filter(e => e instanceof NavigationEnd)
+    ).subscribe(() => {
+      this.isMenuOpen = false;
+      this.isUserMenuOpen = false;
+      this.cdr.markForCheck();
+    });
+  }
+
+  ngOnDestroy() {
+    this.navSub?.unsubscribe();
+  }
 
   toggleMenu() {
     this.isMenuOpen = !this.isMenuOpen;
