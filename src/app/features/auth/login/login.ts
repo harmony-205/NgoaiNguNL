@@ -225,7 +225,109 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.showForgotNewPassword = !this.showForgotNewPassword;
   }
 
-  // --- Login Handler with strict password verification ---
+  // --- Anti-Brute-Force Login Protection (SEC-04) ---
+  // Tạm khóa đăng nhập 15 phút nếu nhập sai mật khẩu 5 lần liên tiếp
+  private readonly MAX_LOGIN_ATTEMPTS = 5;
+  private readonly LOCKOUT_DURATION_MS = 15 * 60 * 1000; // 15 phút
+
+  /**
+   * Sanitizes returnUrl to prevent Open Redirect / Phishing attacks (SEC-Phishing).
+   * Strictly permits relative internal paths starting with a single '/' and rejects '//' or external schemes.
+   */
+  private getSafeReturnUrl(defaultUrl: string): string {
+    const raw = this.route.snapshot.queryParams['returnUrl'];
+    if (!raw || typeof raw !== 'string') {
+      return defaultUrl;
+    }
+    const trimmed = raw.trim();
+    if (trimmed.startsWith('/') && !trimmed.startsWith('//') && !trimmed.includes('://')) {
+      return trimmed;
+    }
+    return defaultUrl;
+  }
+
+  private getLockStorageKey(email: string): string {
+    return `nl_bf_attempts_${email.trim().toLowerCase()}`;
+  }
+
+  isAccountLocked(email: string): boolean {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    const raw = localStorage.getItem(this.getLockStorageKey(email));
+    if (!raw) return false;
+    try {
+      const data = JSON.parse(raw);
+      if (data?.lockedUntil && data.lockedUntil > Date.now()) {
+        return true;
+      }
+      if (data?.lockedUntil && data.lockedUntil <= Date.now()) {
+        localStorage.removeItem(this.getLockStorageKey(email));
+        return false;
+      }
+    } catch {
+      localStorage.removeItem(this.getLockStorageKey(email));
+    }
+    return false;
+  }
+
+  getRemainingLockMinutes(email: string): number {
+    if (typeof window === 'undefined' || !window.localStorage) return 0;
+    const raw = localStorage.getItem(this.getLockStorageKey(email));
+    if (!raw) return 0;
+    try {
+      const data = JSON.parse(raw);
+      if (data?.lockedUntil && data.lockedUntil > Date.now()) {
+        return Math.max(1, Math.ceil((data.lockedUntil - Date.now()) / (60 * 1000)));
+      }
+    } catch { }
+    return 0;
+  }
+
+  recordFailedAttempt(email: string): void {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    const key = this.getLockStorageKey(email);
+    let attempts = 0;
+    try {
+      const existing = JSON.parse(localStorage.getItem(key) || '{}');
+      attempts = (existing?.attempts || 0) + 1;
+    } catch {
+      attempts = 1;
+    }
+
+    if (attempts >= this.MAX_LOGIN_ATTEMPTS) {
+      localStorage.setItem(key, JSON.stringify({
+        attempts,
+        lockedUntil: Date.now() + this.LOCKOUT_DURATION_MS
+      }));
+    } else {
+      localStorage.setItem(key, JSON.stringify({
+        attempts,
+        lockedUntil: null
+      }));
+    }
+  }
+
+  clearFailedAttempts(email: string): void {
+    if (typeof window === 'undefined' || !window.localStorage) return;
+    localStorage.removeItem(this.getLockStorageKey(email));
+  }
+
+  getFailedAttemptMessage(email: string, baseError: string): string {
+    if (this.isAccountLocked(email)) {
+      const remainingMinutes = this.getRemainingLockMinutes(email);
+      return `⚠️ Tài khoản đã bị tạm khóa đăng nhập trong 15 phút do nhập sai mật khẩu 5 lần liên tiếp. Vui lòng thử lại sau ${remainingMinutes} phút hoặc dùng tính năng "Quên mật khẩu?".`;
+    }
+    if (typeof window === 'undefined' || !window.localStorage) return baseError;
+    try {
+      const existing = JSON.parse(localStorage.getItem(this.getLockStorageKey(email)) || '{}');
+      const attempts = existing?.attempts || 0;
+      const remaining = Math.max(0, this.MAX_LOGIN_ATTEMPTS - attempts);
+      return `${baseError} (Bạn còn ${remaining} lần thử trước khi tài khoản bị tạm khóa 15 phút).`;
+    } catch {
+      return baseError;
+    }
+  }
+
+  // --- Login Handler with strict password verification & Brute-force lockout ---
   onLoginSubmit() {
     this.syncAutofillValues();
     this.loginError = '';
@@ -241,6 +343,14 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     const trimmedEmail = (email || '').trim().toLowerCase();
     const trimmedPass = (password || '').trim();
 
+    // SEC-04: Kiểm tra tài khoản có đang bị khóa 15 phút do Brute-force không
+    if (this.isAccountLocked(trimmedEmail)) {
+      const remaining = this.getRemainingLockMinutes(trimmedEmail);
+      this.loginError = `⚠️ Tài khoản đang bị tạm khóa đăng nhập trong 15 phút do nhập sai mật khẩu 5 lần liên tiếp. Vui lòng thử lại sau ${remaining} phút hoặc sử dụng tính năng "Quên mật khẩu?".`;
+      this.cdr.detectChanges();
+      return;
+    }
+
     // 1. Kiểm tra tài khoản Admin / Giáo viên
     const isAdminEmail = trimmedEmail === 'admin@nghiemlinh.edu.vn' ||
                         trimmedEmail === 'nghiemlinh@gmail.com' ||
@@ -252,13 +362,15 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       if (savedAdminPass) validAdminPasswords.push(savedAdminPass);
 
       if (!validAdminPasswords.includes(trimmedPass)) {
-        this.loginError = 'Mật khẩu Admin không chính xác! Vui lòng thử lại.';
+        this.recordFailedAttempt(trimmedEmail);
+        this.loginError = this.getFailedAttemptMessage(trimmedEmail, 'Mật khẩu Admin không chính xác!');
         this.cdr.detectChanges();
         return;
       }
 
+      this.clearFailedAttempts(trimmedEmail);
       this.userService.loginAs('teacher', 'Cô Nghiêm Linh (Admin)', 'admin@nghiemlinh.edu.vn', false, trimmedPass);
-      const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/admin';
+      const returnUrl = this.getSafeReturnUrl('/admin');
       this.router.navigateByUrl(returnUrl);
       return;
     }
@@ -288,14 +400,16 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     // Xác thực mật khẩu học viên chính xác
     const expectedPassword = student.password || 'Password123';
     if (expectedPassword !== trimmedPass) {
-      this.loginError = 'Mật khẩu không chính xác! Vui lòng kiểm tra lại hoặc sử dụng tính năng "Quên mật khẩu?".';
+      this.recordFailedAttempt(trimmedEmail);
+      this.loginError = this.getFailedAttemptMessage(trimmedEmail, 'Mật khẩu không chính xác!');
       this.cdr.detectChanges();
       return;
     }
 
-    // Đăng nhập thành công
+    // Đăng nhập thành công -> Xóa bộ đếm nhập sai
+    this.clearFailedAttempts(trimmedEmail);
     this.userService.loginAs('student', student.fullName, student.email, !!student.isGoogleAuth, trimmedPass);
-    const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/course/tieng-trung';
+    const returnUrl = this.getSafeReturnUrl('/course/tieng-trung');
     this.router.navigateByUrl(returnUrl);
   }
 
@@ -352,21 +466,19 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    // Sinh mã OTP ngẫu nhiên 6 chữ số
-    this.generatedRegisterOtp = Math.floor(100000 + Math.random() * 900000).toString();
     this.isSendingRegisterOtp = true;
     this.cdr.detectChanges();
 
     try {
-      // Gửi email thực sự về Gmail qua backend SMTP service
-      const result = await this.emailOtpService.sendOtpEmail(email, this.generatedRegisterOtp, 'register');
+      // SEC-01 & SEC-02: Backend sinh OTP ngẫu nhiên bằng crypto.randomInt và quản lý thời hạn 5 phút
+      const result = await this.emailOtpService.sendOtpEmail(email, 'register');
 
       if (result.success) {
         this.registerOtpSent = true;
-        this.registerOtpMsg = `Đã gửi mã OTP đến hộp thư Gmail ${email}. Vui lòng kiểm tra Hộp thư đến (hoặc hòm thư Spam/Rác) để lấy mã xác thực!`;
+        this.registerOtpMsg = result.message || `Đã gửi mã OTP đến hộp thư Gmail ${email}. Vui lòng kiểm tra Hộp thư đến (hoặc hòm thư Spam/Rác) để lấy mã xác thực!`;
         this.startRegisterOtpCountdown();
       } else {
-        this.registerOtpError = `Không thể gửi email OTP: ${result.message || 'Lỗi kết nối máy chủ gửi thư'}. Vui lòng thử lại!`;
+        this.registerOtpError = result.message || 'Không thể gửi email OTP. Vui lòng thử lại!';
       }
     } catch (err: any) {
       this.registerOtpError = 'Lỗi kết nối máy chủ gửi OTP: ' + (err?.message || 'Vui lòng thử lại');
@@ -389,7 +501,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 1000);
   }
 
-  onRegisterSubmit() {
+  async onRegisterSubmit() {
     this.syncAutofillValues();
     this.registerOtpError = '';
     this.loginError = '';
@@ -407,12 +519,6 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (enteredOtp !== this.generatedRegisterOtp) {
-      this.registerOtpError = 'Mã OTP không chính xác. Vui lòng kiểm tra lại mã đã nhận trong hộp thư Gmail!';
-      this.cdr.detectChanges();
-      return;
-    }
-
     if (this.registerForm.invalid) {
       this.registerForm.markAllAsTouched();
       this.cdr.detectChanges();
@@ -420,7 +526,15 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     }
 
     const val = this.registerForm.value;
-    const emailVal = this.registerEmailInput?.nativeElement?.value || val.email;
+    const emailVal = (this.registerEmailInput?.nativeElement?.value || val.email).trim().toLowerCase();
+
+    // SEC-02: Xác thực mã OTP thông qua endpoint Backend bảo mật (hạn 5 phút, giới hạn 5 lần sai, xóa sau khi dùng)
+    const verifyResult = await this.emailOtpService.verifyOtp(emailVal, enteredOtp, 'register');
+    if (!verifyResult.success) {
+      this.registerOtpError = verifyResult.message || 'Mã OTP không chính xác hoặc đã hết hạn!';
+      this.cdr.detectChanges();
+      return;
+    }
 
     this.studentService.addStudent({
       fullName: val.fullName,
@@ -505,21 +619,19 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       }
     }
 
-    // Sinh mã OTP 6 số ngẫu nhiên
-    this.generatedForgotOtp = Math.floor(100000 + Math.random() * 900000).toString();
     this.isSendingForgotOtp = true;
     this.cdr.detectChanges();
 
     try {
-      // Gửi email thực sự về Gmail của người dùng qua backend SMTP service
-      const result = await this.emailOtpService.sendOtpEmail(trimmedEmail, this.generatedForgotOtp, 'forgot');
+      // SEC-01 & SEC-02: Backend sinh OTP ngẫu nhiên và quản lý thời hạn
+      const result = await this.emailOtpService.sendOtpEmail(trimmedEmail, 'forgot');
 
       if (result.success) {
         this.forgotOtpSent = true;
-        this.forgotOtpMsg = `Đã gửi mã OTP đến hộp thư Gmail ${this.forgotEmail}. Vui lòng kiểm tra Hộp thư đến (hoặc hòm thư Spam/Rác) để lấy mã xác thực!`;
+        this.forgotOtpMsg = result.message || `Đã gửi mã OTP đến hộp thư Gmail ${this.forgotEmail}. Vui lòng kiểm tra Hộp thư đến (hoặc hòm thư Spam/Rác) để lấy mã xác thực!`;
         this.startForgotCountdown();
       } else {
-        this.forgotError = `Không thể gửi email OTP: ${result.message || 'Lỗi gửi mail'}. Vui lòng thử lại!`;
+        this.forgotError = result.message || 'Không thể gửi email OTP. Vui lòng thử lại!';
       }
     } catch (err: any) {
       console.error('Lỗi sendForgotOtp:', err);
@@ -543,7 +655,7 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     }, 1000);
   }
 
-  verifyForgotOtp() {
+  async verifyForgotOtp() {
     this.forgotError = '';
 
     if (!this.forgotOtpSent) {
@@ -559,8 +671,11 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
-    if (enteredOtp !== this.generatedForgotOtp) {
-      this.forgotError = 'Mã OTP không chính xác. Vui lòng kiểm tra lại mã đã nhận trong hộp thư Gmail!';
+    // SEC-02: Xác thực mã OTP qua Backend (kiểm tra hạn 5 phút, giới hạn 5 lần sai, xóa sau khi dùng)
+    const trimmedEmail = this.forgotEmail.trim().toLowerCase();
+    const verifyResult = await this.emailOtpService.verifyOtp(trimmedEmail, enteredOtp, 'forgot');
+    if (!verifyResult.success) {
+      this.forgotError = verifyResult.message || 'Mã OTP không chính xác hoặc đã hết hạn!';
       this.cdr.detectChanges();
       return;
     }
@@ -640,20 +755,17 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
     this.cdr.detectChanges();
   }
 
-  handleGoogleCredentialResponse(response: any) {
+  async handleGoogleCredentialResponse(response: any) {
     if (response?.credential) {
       try {
-        // Decode JWT payload
-        const base64Url = response.credential.split('.')[1];
-        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-        const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        }).join(''));
+        // SEC-03: Xác thực chữ ký số Google ID Token an toàn thông qua Backend (google-auth-library)
+        const verifyResult = await this.emailOtpService.verifyGoogleToken(response.credential);
+        if (!verifyResult.success || !verifyResult.user) {
+          alert(verifyResult.message || 'Xác thực tài khoản Google thất bại!');
+          return;
+        }
 
-        const payload = JSON.parse(jsonPayload);
-        const email = (payload.email || 'vietdq.google@gmail.com').trim().toLowerCase();
-        const name = payload.name || payload.given_name || 'Học viên Google';
-
+        const { email, name, picture } = verifyResult.user;
         let student = this.studentService.findByEmail(email);
 
         if (student && student.isDeleted) {
@@ -671,18 +783,21 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
             registeredDate: new Date().toISOString().split('T')[0],
             hskAdvanceApproved: false,
             status: 'active',
-            avatarUrl: payload.picture,
+            avatarUrl: picture,
             isGoogleAuth: true,
             authProvider: 'google',
             isDeleted: false
           });
         }
 
+        this.clearFailedAttempts(email);
         this.userService.loginAs('student', student.fullName, student.email, true, student.password);
-        this.router.navigate(['/course/tieng-trung']);
+        const returnUrl = this.getSafeReturnUrl('/course/tieng-trung');
+        this.router.navigateByUrl(returnUrl);
         return;
-      } catch (e) {
-        console.error('Error decoding Google JWT credential', e);
+      } catch (e: any) {
+        console.error('Error verifying Google credential', e);
+        alert('Lỗi xác thực Google: ' + (e?.message || 'Vui lòng thử lại'));
       }
     }
 
@@ -720,7 +835,8 @@ export class LoginComponent implements OnInit, AfterViewInit, OnDestroy {
 
     this.userService.loginAs('student', student.fullName, student.email, true, student.password);
     this.isGoogleModalOpen = false;
-    this.router.navigate(['/course/tieng-trung']);
+    const returnUrl = this.getSafeReturnUrl('/course/tieng-trung');
+    this.router.navigateByUrl(returnUrl);
   }
 
   closeGoogleModal() {

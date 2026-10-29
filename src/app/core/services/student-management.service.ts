@@ -1,4 +1,5 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
+import { SupabaseService } from './supabase.service';
 
 export interface StudentRecord {
   id: string;
@@ -169,8 +170,45 @@ export class StudentManagementService {
   deletedCount = computed(() => this.students().filter(s => !!s.isDeleted).length);
   totalCount = computed(() => this.students().filter(s => !s.isDeleted).length);
 
+  private supabaseService = inject(SupabaseService);
+
   constructor() {
     this.loadStudents();
+    this.syncWithSupabase();
+  }
+
+  private async syncWithSupabase() {
+    if (typeof window === 'undefined') return;
+    try {
+      const remoteStudents = await this.supabaseService.fetchStudents();
+      if (remoteStudents && remoteStudents.length > 0) {
+        // Merge remote records with local records
+        const current = this.students();
+        const mergedMap = new Map<string, StudentRecord>();
+
+        // 1. Add current local records
+        for (const s of current) {
+          mergedMap.set(s.email.toLowerCase(), s);
+        }
+        // 2. Overwrite / insert remote records from Supabase
+        for (const r of remoteStudents) {
+          mergedMap.set(r.email.toLowerCase(), r);
+        }
+
+        const mergedList = Array.from(mergedMap.values());
+        this.students.set(mergedList);
+        this.saveToStorage(mergedList);
+        console.log(`[Supabase] Đã đồng bộ thành công ${remoteStudents.length} học viên từ máy chủ!`);
+      } else if (remoteStudents && remoteStudents.length === 0) {
+        // Initial seed to Supabase if table is currently empty
+        for (const s of this.students()) {
+          await this.supabaseService.upsertStudent(s);
+        }
+        console.log('[Supabase] Đã khởi tạo dữ liệu mẫu lên máy chủ Supabase!');
+      }
+    } catch (e) {
+      console.warn('[Supabase] Đồng bộ nền chưa thành công:', e);
+    }
   }
 
   private loadStudents() {
@@ -248,6 +286,7 @@ export class StudentManagementService {
     const currentList = [newStudent, ...this.students()];
     this.students.set(currentList);
     this.saveToStorage(currentList);
+    this.supabaseService.upsertStudent(newStudent).catch(err => console.warn('[Supabase] Background upsert notice:', err));
     return newStudent;
   }
 
@@ -265,6 +304,7 @@ export class StudentManagementService {
     });
     this.students.set(updated);
     this.saveToStorage(updated);
+    this.supabaseService.updateStudent(studentId, { isDeleted: true }).catch(err => console.warn('[Supabase] Notice:', err));
   }
 
   restoreStudent(studentId: string): void {
@@ -281,6 +321,7 @@ export class StudentManagementService {
     });
     this.students.set(updated);
     this.saveToStorage(updated);
+    this.supabaseService.updateStudent(studentId, { isDeleted: false, status: 'active' }).catch(err => console.warn('[Supabase] Notice:', err));
   }
 
   updateStudent(id: string, updates: Partial<StudentRecord>) {
@@ -292,6 +333,7 @@ export class StudentManagementService {
     });
     this.students.set(updated);
     this.saveToStorage(updated);
+    this.supabaseService.updateStudent(id, updates).catch(err => console.warn('[Supabase] Notice:', err));
   }
 
   toggleHskApproval(studentId: string): boolean {
@@ -305,6 +347,7 @@ export class StudentManagementService {
     });
     this.students.set(updated);
     this.saveToStorage(updated);
+    this.supabaseService.updateStudent(studentId, { hskAdvanceApproved: newStatus }).catch(err => console.warn('[Supabase] Notice:', err));
     return newStatus;
   }
 
@@ -317,6 +360,7 @@ export class StudentManagementService {
     });
     this.students.set(updated);
     this.saveToStorage(updated);
+    this.supabaseService.updateStudent(studentId, { password: newPass }).catch(err => console.warn('[Supabase] Notice:', err));
     return true;
   }
 
