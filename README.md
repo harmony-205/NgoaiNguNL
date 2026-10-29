@@ -3,6 +3,8 @@
 > **Nền tảng học tiếng Trung trực tuyến hiện đại, bài bản và toàn diện.**  
 > Dự án ứng dụng thương mại được xây dựng với công nghệ **Angular 22 (SSR)**, thiết kế trải nghiệm học tập tương tác cao, bảo mật nhiều lớp và kiến trúc module hóa chuẩn công nghiệp.
 
+🌐 **Website chính thức (Live Production):** [https://ngoai-ngu-nl.vercel.app](https://ngoai-ngu-nl.vercel.app)
+
 ---
 
 ## 🎯 Giới thiệu Dự án
@@ -214,8 +216,11 @@ Thư mục xuất bản tối ưu: `dist/nghiem-linh-language-web`
 
 ## 👥 Vai trò Demo phục vụ Đánh giá (Portfolio & Testing)
 
+Trải nghiệm trực tiếp toàn bộ tính năng tại: **[https://ngoai-ngu-nl.vercel.app](https://ngoai-ngu-nl.vercel.app)**
+
 Hệ thống hỗ trợ tài khoản quản trị mẫu có sẵn để người đánh giá trải nghiệm toàn bộ các tính năng:
 * **Tài khoản Quản trị / Giáo viên (Admin):**
+  * Link đăng nhập: [https://ngoai-ngu-nl.vercel.app/login](https://ngoai-ngu-nl.vercel.app/login)
   * Email: `admin@nghiemlinh.edu.vn` (hoặc tên đăng nhập `admin`)
   * Mật khẩu: `Admin@123`
   * Quyền hạn: Quản trị danh sách học viên, duyệt mở khóa các khóa học HSK 4-6, xóa/khôi phục tài khoản, đặt lại mật khẩu học viên, xem trước giao diện học viên.
